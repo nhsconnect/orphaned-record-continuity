@@ -59,6 +59,7 @@ jobs:
           awslocal s3 mb s3://$S3_BUCKET_NAME --region ${{ vars.AWS_REGION }}
 
       - name: Run Unit Tests and Lint Checks
+        working-directory: ./services/ehr-repo
         env:
           S3_BUCKET_NAME: test-bucket
           LOCALSTACK_URL: http://localhost:4566
@@ -73,6 +74,7 @@ jobs:
         run: npm run test
 
       - name: Run Integration Tests
+        working-directory: ./services/ehr-repo
         env:
           S3_BUCKET_NAME: test-bucket
           LOCALSTACK_URL: http://localhost:4566
