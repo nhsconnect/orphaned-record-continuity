@@ -31,9 +31,14 @@ jobs:
         working-directory: './services/ehr-repo'
     runs-on: ubuntu-latest
     steps:
+      - name: Extract branch name
+        shell: bash
+        run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+        id: extract_branch
+
       - uses: actions/checkout@v5
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ steps.extract_branch.outputs.branch }}
           fetch-depth: 0
 
       - name: Set up Node
