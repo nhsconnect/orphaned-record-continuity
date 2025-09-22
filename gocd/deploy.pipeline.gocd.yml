@@ -12,11 +12,6 @@ common:
           command: /bin/bash
           arguments:
             - -c
-            - ./tasks create_secrets
-      - exec:
-          command: /bin/bash
-          arguments:
-            - -c
             - ./tasks tf_plan_certs create
   deploy_certs: &deploy_certs
     resources:
