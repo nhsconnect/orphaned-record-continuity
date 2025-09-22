@@ -53,9 +53,10 @@ jobs:
       - name: Configure AWS Credentials (Read Write)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.IAM_ROLE_ECR_HOLDING_ACCOUNT_READ_WRITE }}
+          role-to-assume: ${{ secrets.IAM_ROLE }}
           aws-region: ${{ vars.AWS_REGION }}
           mask-aws-account-id: true
+          role-skip-session-tagging: true
 
       - name: Login to Amazon ECR
         id: ecr-login
