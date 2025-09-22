@@ -23,9 +23,9 @@
 name: PR Checks
 on:
   pull_request:
+    types: [opened, synchronize, reopened]
     branches:
       - main
-
 permissions:
   contents: read       # Required for actions/checkout
   id-token: write      # Required for requesting the JWT
