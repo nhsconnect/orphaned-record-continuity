@@ -22,10 +22,12 @@
 
 name: PR Checks
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+  push:
     branches:
       - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+    
 permissions:
   contents: read       # Required for actions/checkout
   id-token: write      # Required for requesting the JWT

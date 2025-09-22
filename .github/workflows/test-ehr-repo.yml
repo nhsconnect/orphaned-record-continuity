@@ -1,10 +1,6 @@
 name: Test ECR Repository
 
 on:
-  workflow_call:
-
-  workflow_dispatch:
-
   pull_request:
     branches:
       - main
