@@ -116,8 +116,7 @@ jobs:
           mask-aws-account-id: true
 
       - name: Deploy Infrastructure
-        # uses: nhsconnect/prm-deductions-infra/.github/workflows/deploy-stack.yml@PRM-495
-        uses: .github/workflows/deploy-stack.yml
+        uses: nhsconnect/prm-deductions-infra/.github/workflows/deploy-stack.yml@PRM-495
         with:
           stack: ehr-repo
           environment: ${{ inputs.environment }}
