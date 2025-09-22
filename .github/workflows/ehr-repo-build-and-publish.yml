@@ -78,7 +78,9 @@ jobs:
           NHS_ENVIRONMENT: ${{ inputs.environment }}
         run: |
           docker build -t $REGISTRY/$REPOSITORY:$SHA_TAG -t $REGISTRY/$REPOSITORY:$BRANCH_TAG -t $REGISTRY/$REPOSITORY:latest .
-          docker push $REGISTRY/$REPOSITORY:$SHA_TAG $REGISTRY/$REPOSITORY:$BRANCH_TAG $REGISTRY/$REPOSITORY:latest
+          docker push "$ECR_URI:$SHA_TAG"
+          docker push "$ECR_URI:$BRANCH_TAG"
+          docker push "$ECR_URI:latest"
 
   deploy_infra:
     name: Deploy EHR Infrastructure
