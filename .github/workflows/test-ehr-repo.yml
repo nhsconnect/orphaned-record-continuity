@@ -44,6 +44,7 @@ jobs:
           node-version: 22
 
       - name: Install dependencies
+        working-directory: ./services/ehr-repo
         run: npm install
 
       - name: Start LocalStack
