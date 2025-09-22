@@ -71,14 +71,6 @@ jobs:
           echo "::add-mask::$uri"
           echo "uri=$uri" >> $GITHUB_OUTPUT
 
-      - name: Get docker tags
-        id: get-tags
-        run: |
-          sha=$(echo ${{ github.sha }} | cut -c 1-8)
-          echo "sha=$sha" >> $GITHUB_OUTPUT
-          branchname=$(echo ${{ github.ref_name }}${{ github.head_ref }} | sed 's/^[0-9]*\/merge//g')
-          echo "branchname=$branchname" >> $GITHUB_OUTPUT
-
       - name: docker build, tag, and publish
         env:
           REF_NAME: ${{ github.ref_name }}
@@ -92,9 +84,12 @@ jobs:
           fi
           docker build "${TAG_ARGS[@]}" --build-arg BUILD_TAG="$IMAGE_TAG" .
           docker push "$ECR_URI:$SHA_TAG"
-          docker push "$ECR_URI:$BRANCH_TAG"
-          docker push "$ECR_URI:latest"
-
+          docker push "$ECR_URI:$IMAGE_TAG"
+          if [ -n "${GITHUB_REF_NAME:-}" ]; then
+            REF_TAG="${GITHUB_REF_NAME//\//-}"
+            docker push "$ECR_URI:$REF_TAG"
+          fi
+          
   deploy_infra:
     name: Deploy EHR Infrastructure
     runs-on: ubuntu-latest
