@@ -34,6 +34,9 @@ permissions:
 jobs:
   eslint:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./services/ehr-repo
     steps:
       - name: Set up git repo
         uses: actions/checkout@v4
