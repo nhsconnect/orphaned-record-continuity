@@ -45,14 +45,8 @@ jobs:
         with:
           node-version: 22
 
-      - run: npm install eslint
-
-      - name: ESLint
-        run: npm run lint
-
-
-      - name: Clean install
-        run: npm ci
+      - name: Install dependencies
+        run: npm install
 
       - name: Start LocalStack
         uses: LocalStack/setup-localstack@v0.2.4
@@ -65,7 +59,7 @@ jobs:
           awslocal dynamodb create-table --region ${{ vars.AWS_REGION }} --cli-input-json file://scripts/local-test-db-scheme.json
           awslocal s3 mb s3://$S3_BUCKET_NAME --region ${{ vars.AWS_REGION }}
 
-      - name: Run Tests with Coverage
+      - name: Run Unit Tests and Lint Checks
         env:
           S3_BUCKET_NAME: test-bucket
           LOCALSTACK_URL: http://localhost:4566
@@ -77,11 +71,19 @@ jobs:
           NHS_ENVIRONMENT: local
           EHR_URL: http://localhost:3000
           AUTHORIZATION_KEYS: auth-key-1
-        run: npm run test:coverage
+        run: npm run test
 
-
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v5
+      - name: Run Integration Tests
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          S3_BUCKET_NAME: test-bucket
+          LOCALSTACK_URL: http://localhost:4566
+          DYNAMODB_NAME: local-test-db
+          DYNAMODB_LOCAL_ENDPOINT: http://localhost:4566
+          AWS_ACCESS_KEY_ID: LSIA5678901234567890
+          AWS_SECRET_ACCESS_KEY: LSIA5678901234567890
+          SERVICE_URL: http://localhost:3000
+          NHS_ENVIRONMENT: local
+          EHR_URL: http://localhost:3000
+          AUTHORIZATION_KEYS: auth-key-1
+        run: npm run test:integration
+

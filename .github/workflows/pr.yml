@@ -33,6 +33,7 @@ permissions:
 
 jobs:
   eslint:
+    name: ESLint
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -49,7 +50,9 @@ jobs:
 
       - name: eslint
         run: npm run lint
+
   test:
+    name: Run Tests
     uses: ./.github/workflows/test-ecr-repo.yml
 
   # plan:

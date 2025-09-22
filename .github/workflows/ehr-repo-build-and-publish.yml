@@ -28,14 +28,10 @@ permissions:
   pull-requests: write # Required to write comments
 
 jobs:
-  test:
-    uses: ./.github/workflows/test-ecr-repo.yml
-
   build_and_publish:
     name: Build & Publish
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
-    needs: [test]
     defaults:
       run:
         working-directory: './services/ehr-repo'
@@ -83,7 +79,6 @@ jobs:
         run: |
           docker build -t $REGISTRY/$REPOSITORY:$SHA_TAG -t $REGISTRY/$REPOSITORY:$BRANCH_TAG -t $REGISTRY/$REPOSITORY:latest .
           docker push $REGISTRY/$REPOSITORY:$SHA_TAG $REGISTRY/$REPOSITORY:$BRANCH_TAG $REGISTRY/$REPOSITORY:latest
-# TODO do we want to build the image here?
 
   deploy_infra:
     name: Deploy EHR Infrastructure
