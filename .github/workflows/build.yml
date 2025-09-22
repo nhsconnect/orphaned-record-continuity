@@ -9,9 +9,6 @@ jobs:
   sonarcloud:
     name: SonarCloud
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./services/ehr-repo
     steps:
       - uses: actions/checkout@v3
         with:
