@@ -61,6 +61,15 @@ jobs:
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Get ECR repository URI from SSM
+        id: ecr-repo
+        run: |
+          uri=$(aws ssm get-parameter \
+          --name "/repo/${{ vars.AWS_ENVIRONMENT }}/prm-deductions-ehr-repository/ecr/url/ehr-repository" \
+          --query "Parameter.Value" --output text)
+          echo "::add-mask::$uri"
+          echo "uri=$uri" >> $GITHUB_OUTPUT
+
       - name: Get docker tags
         id: get-tags
         run: |
@@ -71,11 +80,9 @@ jobs:
 
       - name: docker build, tag, and publish
         env:
-          REGISTRY: ${{ steps.ecr-login.outputs.registry }}
-          REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
-          SHA_TAG: ${{ steps.get-tags.outputs.sha }}
-          BRANCH_TAG: ${{ steps.get-tags.outputs.branchname }}
-          NHS_ENVIRONMENT: ${{ inputs.environment }}
+          REF_NAME: ${{ github.ref_name }}
+          ECR_URI: ${{ steps.ecr-repo.outputs.uri }}
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           TAG_ARGS=(-t "$ECR_URI:$IMAGE_TAG" -t "$ECR_URI:latest")
           if [ -n "${REF_NAME:-}" ]; then
