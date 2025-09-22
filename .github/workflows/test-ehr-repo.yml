@@ -26,9 +26,6 @@ jobs:
 #  TODO npm run test runs eslint and fix already...
   run_tests:
     name: Lint, Unit, and Integration
-    defaults:
-      run:
-        working-directory: './services/ehr-repo'
     runs-on: ubuntu-latest
     steps:
       - name: Extract branch name
