@@ -77,7 +77,12 @@ jobs:
           BRANCH_TAG: ${{ steps.get-tags.outputs.branchname }}
           NHS_ENVIRONMENT: ${{ inputs.environment }}
         run: |
-          docker build -t $REGISTRY/$REPOSITORY:$SHA_TAG -t $REGISTRY/$REPOSITORY:$BRANCH_TAG -t $REGISTRY/$REPOSITORY:latest .
+          TAG_ARGS=(-t "$ECR_URI:$IMAGE_TAG" -t "$ECR_URI:latest")
+          if [ -n "${REF_NAME:-}" ]; then
+            REF_TAG="${REF_NAME//\//-}"
+            TAG_ARGS+=(-t "$ECR_URI:$REF_TAG")
+          fi
+          docker build "${TAG_ARGS[@]}" --build-arg BUILD_TAG="$IMAGE_TAG" .
           docker push "$ECR_URI:$SHA_TAG"
           docker push "$ECR_URI:$BRANCH_TAG"
           docker push "$ECR_URI:latest"
