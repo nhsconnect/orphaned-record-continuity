@@ -112,7 +112,6 @@ jobs:
           environment: ${{ inputs.environment }}
           is_deplyoment: true
 
-
   end_to_end_test:
     name: End to End
     needs: [deploy_infra]
