@@ -1,11 +1,10 @@
 name: Test ECR Repository
 
 on:
-  pull_request:
+  push:
     branches:
       - main
-    paths:
-      - '../../services/ehr-repo/**'
+  pull_request:
     types: [opened, synchronize, reopened]
 
 permissions:
