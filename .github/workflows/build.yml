@@ -21,6 +21,7 @@ jobs:
 
       - name: Run test coverage
         run: |
+          cd ./services/ehr-repo
           ./tasks test_coverage-github-action
 
       - name: SonarCloud Scan
