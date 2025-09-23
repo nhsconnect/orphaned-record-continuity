@@ -34,6 +34,18 @@ on:
       environment:
         default: "dev"
         type: string
+      is_deployment:
+        default: false
+        type: boolean
+        description: "Whether this is a deployment (run's terraform plan or apply)"
+      skip_build_and_publish:
+        default: false
+        type: boolean
+        description: "Skip build_and_publish step"
+      enable_end_to_end:
+        default: false
+        type: boolean
+        description: "Enable end to end tests"
 
 permissions:
   contents: read  # Required for actions/checkout
@@ -42,7 +54,7 @@ permissions:
 
 jobs:
   build_and_publish:
-    if: ${{ !inputs.skip_build_and_publish }}
+    if: ${{ !inputs.skip_build_and_publish && inputs.is_deployment }}
     name: Build & Publish
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
