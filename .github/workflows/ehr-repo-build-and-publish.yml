@@ -101,9 +101,9 @@ jobs:
     with:
       stack: ehr-repo
       environment: ${{ inputs.environment }}
-      is_deplyoment: true
+      is_deployment: false
     secrets: inherit
-    
+
   end_to_end_test:
     name: End to End
     needs: [deploy_infra]
