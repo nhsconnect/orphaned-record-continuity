@@ -15,10 +15,18 @@ on:
         default: "dev"
         type: string
         description: "Environment to use"
+      is_deployment:
+        default: false
+        type: boolean
+        description: "Whether this is a deployment (run's terraform plan or apply)"
       skip_build_and_publish:
         default: false
         type: boolean
         description: "Skip build_and_publish step"
+      enable_end_to_end:
+        default: false
+        type: boolean
+        description: "Enable end to end tests"
 
 
   workflow_call:
@@ -106,9 +114,11 @@ jobs:
     with:
       stack: ehr-repo
       environment: ${{ inputs.environment }}
+      is_deployment: ${{ inputs.is_deployment }}
     secrets: inherit
 
   end_to_end_test:
+    if: ${{ inputs.enable_end_to_end }}
     name: End to End
     needs: [deploy_infra]
     uses: ./.github/workflows/e2e.yml
