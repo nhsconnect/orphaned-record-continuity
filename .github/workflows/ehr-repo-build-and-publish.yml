@@ -102,7 +102,6 @@ jobs:
 
   deploy_infra:
     name: Deploy EHR Infrastructure
-    needs: [build_and_publish]
     uses: nhsconnect/prm-deductions-infra/.github/workflows/deploy-stack.yml@PRM-495
     with:
       stack: ehr-repo
