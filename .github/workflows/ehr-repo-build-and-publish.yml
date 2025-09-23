@@ -15,6 +15,11 @@ on:
         default: "dev"
         type: string
         description: "Environment to use"
+      skip_build_and_publish:
+        default: false
+        type: boolean
+        description: "Skip build_and_publish step"
+
 
   workflow_call:
     inputs:
@@ -29,6 +34,7 @@ permissions:
 
 jobs:
   build_and_publish:
+    if: ${{ !inputs.skip_build_and_publish }}
     name: Build & Publish
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
