@@ -96,32 +96,14 @@ jobs:
 
   deploy_infra:
     name: Deploy EHR Infrastructure
-    runs-on: ubuntu-latest
     needs: [build_and_publish]
-    environment: ${{ inputs.environment }}
-
-    # TODO once renaming of repositories and moving of Github org, this step will need adjusting to reflect repo change
-    steps:
-      - name: Checkout Infra
-        uses: actions/checkout@v5
-        with:
-          repository: 'nhsconnect/prm-deductions-infra'
-          ref: PRM-495  # e.g. dev, feature-xyz
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.IAM_ROLE_ECR_HOLDING_ACCOUNT_READ_WRITE }}
-          aws-region: ${{ vars.AWS_REGION }}
-          mask-aws-account-id: true
-
-      - name: Deploy Infrastructure
-        uses: nhsconnect/prm-deductions-infra/.github/workflows/deploy-stack.yml@PRM-495
-        with:
-          stack: ehr-repo
-          environment: ${{ inputs.environment }}
-          is_deplyoment: true
-
+    uses: nhsconnect/prm-deductions-infra/.github/workflows/deploy-stack.yml@PRM-495
+    with:
+      stack: ehr-repo
+      environment: ${{ inputs.environment }}
+      is_deplyoment: true
+    secrets: inherit
+    
   end_to_end_test:
     name: End to End
     needs: [deploy_infra]
