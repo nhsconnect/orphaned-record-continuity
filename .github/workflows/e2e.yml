@@ -29,15 +29,6 @@ jobs:
           distribution: 'adopt'
           java-version: '21'
 
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          #          TODO might want a testing specific testing role
-          role-to-assume: ${{ secrets.IAM_ROLE }}
-          aws-region: ${{ vars.AWS_REGION }}
-          mask-aws-account-id: true
-
       - name: Build
         run: |
           chmod +x ./gradlew

@@ -112,4 +112,5 @@ jobs:
     name: End to End
     needs: [deploy_infra]
     uses: ./.github/workflows/e2e.yml
+    secrets: inherit
   
