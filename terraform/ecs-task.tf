@@ -24,17 +24,17 @@ resource "aws_ecs_task_definition" "task" {
 
 
   container_definitions = templatefile("${path.module}/templates/ecs-task-def.tmpl", {
-    container_name         = "${var.component_name}-container",
-    ecr_url                = local.task_ecr_url,
-    image_name             = "deductions/${var.component_name}",
-    image_tag              = var.task_image_tag,
-    cpu                    = var.task_cpu,
-    memory                 = var.task_memory,
-    container_port         = var.port,
-    host_port              = var.port,
-    log_region             = var.region,
-    log_group              = local.task_log_group,
-    environment_variables  = jsonencode(local.environment_variables)
+    container_name        = "${var.component_name}-container",
+    ecr_url               = local.task_ecr_url,
+    image_name            = "deductions/${var.component_name}",
+    image_tag             = var.task_image_tag,
+    cpu                   = var.task_cpu,
+    memory                = var.task_memory,
+    container_port        = var.port,
+    host_port             = var.port,
+    log_region            = var.region,
+    log_group             = local.task_log_group,
+    environment_variables = jsonencode(local.environment_variables)
   })
 
   tags = {
