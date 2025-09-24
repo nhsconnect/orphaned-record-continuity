@@ -30,7 +30,6 @@ resource "aws_ecs_task_definition" "task" {
     image_tag              = var.task_image_tag,
     cpu                    = var.task_cpu,
     memory                 = var.task_memory,
-    readonlyRootFilesystem = true
     container_port         = var.port,
     host_port              = var.port,
     log_region             = var.region,
