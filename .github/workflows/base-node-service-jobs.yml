@@ -1,54 +1,56 @@
-name: Build & Publish EHR Repository
+name: Base Node Services Build and Deploy
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'services/ehr-repo/**'
-
   workflow_dispatch:
     inputs:
       environment:
-        default: "dev"
-        type: string
-        description: "Environment to use"
+        type: choice
+        options:
+          - dev
+          - pre-prod
+          - prod
+        required: true
+        default: dev
+        description: Which environment to build and deploy to?
+      service:
+        type: choice
+        options:
+          - ehr-repo
+        description: Which service to build and deploy
       is_deployment:
-        default: false
         type: boolean
-        description: "Whether this is a deployment (run's terraform plan or apply)"
+        default: false
+        description: Whether to deploy of not
+      enable_end_to_end_testing:
+        type: boolean
+        default: false
+        description: Whether to perform end to end tests
       skip_build_and_publish:
-        default: false
         type: boolean
-        description: "Skip build_and_publish step"
-      enable_end_to_end:
-        default: false
-        type: boolean
-        description: "Enable end to end tests"
-
+        default: true
+        description: Whether to skip build_and_publish step
 
   workflow_call:
     inputs:
       environment:
-        default: "dev"
+        type: string
+        default: dev
+      service:
         type: string
       is_deployment:
-        default: false
         type: boolean
-        description: "Whether this is a deployment (run's terraform plan or apply)"
+        default: false
+      enable_end_to_end_testing:
+        type: boolean
+        default: false
       skip_build_and_publish:
-        default: false
         type: boolean
-        description: "Skip build_and_publish step"
-      enable_end_to_end:
         default: false
-        type: boolean
-        description: "Enable end to end tests"
 
 permissions:
-  contents: read  # Required for actions/checkout
-  id-token: write # Required for requesting the JWT
-  pull-requests: write # Required to write comments
+  pull-requests: write
+  id-token: write
+  contents: read
 
 jobs:
   build_and_publish:
@@ -58,23 +60,20 @@ jobs:
     environment: ${{ inputs.environment }}
     defaults:
       run:
-        working-directory: './services/ehr-repo'
+        working-directory: './services/${{ inputs.service }}'
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node
         with:
           node-version: 22
 
-      - name: Clean install
-        run: npm ci
-
-      - name: build
+      - name: Clean Install
         run: npm run build
 
-      - name: Configure AWS Credentials (Read Write)
+      - name: Configure AWS Credentials (Read/Write)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.IAM_ROLE }}
@@ -84,15 +83,16 @@ jobs:
 
       - name: Login to Amazon ECR
         id: ecr-login
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login
 
       - name: Get ECR repository URI from SSM
         id: ecr-repo
-        run: |
+#        TODO do we want to make sure the name of the ecr repos can match the services to aid in making things reusable?
+        run: | 
           uri=$(aws ssm get-parameter \
-          --name "/repo/${{ vars.AWS_ENVIRONMENT }}/prm-deductions-ehr-repository/ecr/url/ehr-repository" \
+          --name "/repo/${{ vars.AWS_ENVIRONMENT }}/prm-deductions-ehr-repository/ecr/url/${{ inputs.service }}" \
           --query "Parameter.Value" --output text)
-          echo "::add-mask::$uri"
+          echo "::add-maks::$uri"
           echo "uri=$uri" >> $GITHUB_OUTPUT
 
       - name: docker build, tag, and publish
@@ -116,13 +116,13 @@ jobs:
           if [ -n "${REF_NAME:-}" ]; then
             REF_TAG="${REF_NAME//\//-}"
             docker push "$ECR_URI:$REF_TAG"
-          fi
-
+          fi  
+          
   deploy_infra:
     name: Deploy EHR Infrastructure
     uses: nhsconnect/prm-deductions-infra/.github/workflows/deploy-stack.yml@PRM-495
     with:
-      stack: ehr-repo
+      stack: ${{ inputs.service }}
       environment: ${{ inputs.environment }}
       is_deployment: ${{ inputs.is_deployment }}
     secrets: inherit
@@ -133,4 +133,3 @@ jobs:
     needs: [deploy_infra]
     uses: ./.github/workflows/e2e.yml
     secrets: inherit
-  
