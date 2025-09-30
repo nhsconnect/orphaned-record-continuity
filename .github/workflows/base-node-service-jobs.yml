@@ -16,36 +16,45 @@ on:
         type: choice
         options:
           - ehr-repo
+        required: true
         description: Which service to build and deploy
       is_deployment:
         type: boolean
         default: false
         description: Whether to deploy of not
+        required: true
       enable_end_to_end_testing:
         type: boolean
         default: false
         description: Whether to perform end to end tests
+        required: true
       skip_build_and_publish:
         type: boolean
         default: true
         description: Whether to skip build_and_publish step
+        required: true
 
   workflow_call:
     inputs:
       environment:
         type: string
         default: dev
+        required: true
       service:
         type: string
+        required: true
       is_deployment:
         type: boolean
         default: false
+        required: true
       enable_end_to_end_testing:
         type: boolean
         default: false
+        required: true
       skip_build_and_publish:
         type: boolean
         default: false
+        required: true
 
 permissions:
   pull-requests: write
@@ -66,7 +75,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node
+        uses: actions/setup-node@v5
         with:
           node-version: 22
 
@@ -83,39 +92,30 @@ jobs:
 
       - name: Login to Amazon ECR
         id: ecr-login
-        uses: aws-actions/amazon-ecr-login
-
-      - name: Get ECR repository URI from SSM
-        id: ecr-repo
-#        TODO do we want to make sure the name of the ecr repos can match the services to aid in making things reusable?
-        run: | 
-          uri=$(aws ssm get-parameter \
-          --name "/repo/${{ vars.AWS_ENVIRONMENT }}/prm-deductions-ehr-repository/ecr/url/${{ inputs.service }}" \
-          --query "Parameter.Value" --output text)
-          echo "::add-maks::$uri"
-          echo "uri=$uri" >> $GITHUB_OUTPUT
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: docker build, tag, and publish
         env:
           REF_NAME: ${{ github.ref_name }}
-          ECR_URI: ${{ steps.ecr-repo.outputs.uri }}
+          REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          REPOSITORY: deductions/${{ inputs.service }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
           set -euo pipefail
-          TAG_ARGS=(-t "$ECR_URI:$IMAGE_TAG" -t "$ECR_URI:latest")
+          TAG_ARGS=(-t "$REGISTRY/$REPOSITORY:$IMAGE_TAG" -t "$REGISTRY/$REPOSITORY:latest")
           if [ -n "${REF_NAME:-}" ]; then
             REF_TAG="${REF_NAME//\//-}"
-            TAG_ARGS+=(-t "$ECR_URI:$REF_TAG")
+            TAG_ARGS+=(-t "$REGISTRY/$REPOSITORY:$REF_TAG")
           fi
 
           docker build "${TAG_ARGS[@]}" --build-arg BUILD_TAG="$IMAGE_TAG" .
 
-          docker push "$ECR_URI:$IMAGE_TAG"
-          docker push "$ECR_URI:latest"
+          docker push "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
+          docker push "$REGISTRY/$REPOSITORY:latest"
 
           if [ -n "${REF_NAME:-}" ]; then
             REF_TAG="${REF_NAME//\//-}"
-            docker push "$ECR_URI:$REF_TAG"
+            docker push "$REGISTRY/$REPOSITORY:$REF_TAG"
           fi  
           
   deploy_infra:

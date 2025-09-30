@@ -40,3 +40,9 @@ jobs:
     needs: get_changed_files
     if: contains(needs.get_changed_files.outputs.changed, 'services/ehr-repo') || contains(needs.get_changed_files.outputs.changed, '.github/')
     uses: './.github/workflows/base-node-service-jobs.yml'
+    with:
+      service: ehr-repo
+      environment: dev
+      is_deployment: false
+      enable_end_to_end_testing: false
+      skip_build_and_publish: true
