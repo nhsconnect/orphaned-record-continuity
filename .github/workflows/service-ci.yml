@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'services/ehr-repo/**'
+      - 'services/mesh-forwarder/**'
       - '.github/workflows/service-ci.yml'
 
   pull_request:
@@ -17,6 +18,7 @@ on:
       - main
     paths:
       - 'services/ehr-repo/**'
+      - 'services/mesh-forwarder/**'
       - '.github/workflows/service-ci.yml'
 
 permissions:
