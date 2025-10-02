@@ -1,0 +1,487 @@
+#!/bin/bash
+
+set -Eeo pipefail
+
+###########################
+# Local Config Parameters #
+###########################
+
+AWS_DEFAULT_REGION=eu-west-2
+IMAGE_REPO_NAME=deductions/mesh-forwarder
+export NHS_SERVICE=mesh-forwarder
+
+AWS_HELPERS_VERSION=0.2.27
+echo "AWS helper scripts version: $AWS_HELPERS_VERSION"
+
+
+###########################
+# Shared utils            #
+###########################
+
+function download_util() {
+  local UTIL_VERSION=$1
+  local UTIL_FILENAME=$2
+
+  local UTIL_FILEPATH="utils/$UTIL_VERSION/$UTIL_FILENAME"
+
+  mkdir -p "utils/$UTIL_VERSION"
+  if [[ ! -f $UTIL_FILEPATH ]];then
+    wget --quiet -O $UTIL_FILEPATH https://github.com/nhsconnect/prm-deductions-support-infra/releases/download/${UTIL_VERSION}/${UTIL_FILENAME}
+  fi
+  chmod +x $UTIL_FILEPATH
+
+  echo "$UTIL_FILEPATH"
+}
+
+function fetch_redaction_utils() {
+  download_util $AWS_HELPERS_VERSION run-with-redaction.sh
+  download_util $AWS_HELPERS_VERSION redactor
+}
+
+AWS_HELPERS_FILE=$(download_util $AWS_HELPERS_VERSION aws-helpers)
+source $AWS_HELPERS_FILE
+
+
+####################################
+# Instance (Environment) Variables #
+####################################
+
+function check_env() {
+  if [[ -z "${NHS_ENVIRONMENT}" ]]; then
+    echo "Must set NHS_ENVIRONMENT"
+    exit 1
+  fi
+}
+
+function check_nhs_service() {
+  if [[ -z "${NHS_SERVICE}" ]]; then
+    echo "Must set NHS_SERVICE"
+    exit 1
+  fi
+}
+
+function set_image_tag() {
+  if [[ -z "${GO_DEPENDENCY_LABEL_APP}" ]]; then
+    export IMAGE_TAG=${GO_PIPELINE_LABEL:-$(git rev-parse HEAD | cut -c 1-8)}
+  else
+    export IMAGE_TAG=${GO_DEPENDENCY_LABEL_APP}
+  fi
+}
+
+function get_authorisation() {
+  check_env
+  export SHARED_SECRET=$(_get_aws_ssm_secret "/repo/${NHS_ENVIRONMENT}/user-input/external/mesh-mailbox-shared-secret")
+  export MAIL_BOX_ID=$(_get_aws_ssm_secret "/repo/${NHS_ENVIRONMENT}/user-input/external/mesh-mailbox-id")
+  export MAIL_BOX_PASS=$(_get_aws_ssm_secret "/repo/${NHS_ENVIRONMENT}/user-input/external/mesh-mailbox-password")
+}
+
+function _get_authorisation_token() {
+  _assume_environment_role $NHS_ENVIRONMENT
+  get_authorisation
+  python3 auth-creation.py $SHARED_SECRET $MAIL_BOX_ID $MAIL_BOX_PASS
+}
+
+function get_subscriptions_env() {
+  check_env
+  export REPO_ASID=$(_get_aws_ssm_secret "/repo/${NHS_ENVIRONMENT}/user-input/external/nems-from-asid")
+  export NEMS_ASID=$(_get_aws_ssm_secret "/repo/${NHS_ENVIRONMENT}/user-input/external/nems-to-asid")
+  export ODS_CODE=$(_get_aws_ssm_secret "/repo/${NHS_ENVIRONMENT}/user-input/external/repository-ods-code")
+  export NEMS_URL=$(_get_aws_ssm_secret "/repo/${NHS_ENVIRONMENT}/user-input/external/nems-subscription-url")
+  export MESH_MAILBOX_ID=$(_get_aws_ssm_secret "/repo/${NHS_ENVIRONMENT}/user-input/external/mesh-mailbox-id")
+  export NEMS_SUBSCRIPTION_ID=$(_get_aws_ssm_secret "/repo/${NHS_ENVIRONMENT}/user-input/external/nems-subscription-id")
+  set_cert_issuer
+}
+
+function get_nems_certificates() {
+  mkdir -p certs/${NHS_ENVIRONMENT}
+  aws ssm get-parameter --with-decryption --region ${AWS_DEFAULT_REGION} --name  "/repo/${NHS_ENVIRONMENT}/user-input/external/nems-tls-client-key" | jq -r .Parameter.Value > certs/${NHS_ENVIRONMENT}/nems-client.key
+  aws ssm get-parameter --with-decryption --region ${AWS_DEFAULT_REGION} --name  "/repo/${NHS_ENVIRONMENT}/user-input/external/nems-tls-client-cert" | jq -r .Parameter.Value > certs/${NHS_ENVIRONMENT}/nems-client.crt
+  aws ssm get-parameter --with-decryption --region ${AWS_DEFAULT_REGION} --name  "/repo/${NHS_ENVIRONMENT}/user-input/external/nems-tls-ca-certs" | jq -r .Parameter.Value > certs/${NHS_ENVIRONMENT}/nems-ca-certs.crt
+}
+
+function get_mesh_mailbox_certificates() {
+  mkdir -p certs/${NHS_ENVIRONMENT}
+
+  aws ssm get-parameter --with-decryption --region ${AWS_DEFAULT_REGION} --name  "/repo/${NHS_ENVIRONMENT}/user-input/external/mesh-mailbox-ca-cert" | jq -r .Parameter.Value > certs/${NHS_ENVIRONMENT}/mesh-mailbox-ca-cert.pem
+  aws ssm get-parameter --with-decryption --region ${AWS_DEFAULT_REGION} --name  "/repo/${NHS_ENVIRONMENT}/user-input/external/mesh-mailbox-client-key" | jq -r .Parameter.Value > certs/${NHS_ENVIRONMENT}/mesh-mailbox-key.pem
+  aws ssm get-parameter --with-decryption --region ${AWS_DEFAULT_REGION} --name  "/repo/${NHS_ENVIRONMENT}/user-input/external/mesh-mailbox-client-cert" | jq -r .Parameter.Value > certs/${NHS_ENVIRONMENT}/mesh-mailbox-cert.pem
+}
+
+function get_local_tkw_subscriptions_env() {
+  export REPO_ASID='918999198820'
+  export NEMS_ASID='111111111111'
+  export ODS_CODE='A91720'
+  export NEMS_URL='http://192.168.128.14:8080/STU3/Subscription'
+  export MESH_MAILBOX_ID='A91720OT001'
+  export NEMS_SUBSCRIPTION_ID='00000000000000000000000000000000'
+  export NHS_ENVIRONMENT=tkw
+  set_cert_issuer
+}
+
+function set_nems_env() {
+  if [[ -z "${NHS_ENVIRONMENT}" ]]; then
+     get_local_tkw_subscriptions_env
+  else
+     get_subscriptions_env
+     get_nems_certificates
+  fi
+  pushd nems-subscriber && pip3 install -r requirements.txt
+}
+
+function set_cert_issuer() {
+  if [[ "${NHS_ENVIRONMENT}" == prod ]]; then
+    export ISSUER=nems-${ODS_CODE}.nhsdigital.nhs.uk
+  else
+    export ISSUER=${ODS_CODE}.nems.${NHS_ENVIRONMENT}.non-prod.patient-deductions.nhs.uk
+  fi
+}
+
+function setup_venv {
+  venv_directory=venv
+  echo "Using this directory for venv: ${venv_directory}"
+  python3 -m venv "${venv_directory}"
+  source "${venv_directory}"/bin/activate
+}
+
+function get_aws_account_id() {
+  AWS_ACCOUNT_ID=$(dojo -c Dojofile-infra "aws sts get-caller-identity | jq -r .Account")
+}
+
+#######################
+# Terraform Functions #
+#######################
+
+function tf_init() {
+  check_env
+
+  cd terraform
+
+  terraform init -reconfigure \
+    -backend-config key="${NHS_SERVICE}-${NHS_ENVIRONMENT}/terraform.tfstate" \
+    -backend-config bucket="prm-deductions-${NHS_ENVIRONMENT}-terraform-state" \
+    -backend-config dynamodb_table="prm-deductions-${NHS_ENVIRONMENT}-terraform-table" \
+    -backend-config region=${AWS_DEFAULT_REGION}
+}
+
+function tf_plan() {
+  operation=$1
+  certs=$2
+  TARGET=""
+
+  echo "Image tag is ${IMAGE_TAG}"
+
+  if [[ "${certs}" == "true" ]]; then
+    TARGET="-target=aws_acm_certificate.mesh-forwarder-cert"
+  fi
+
+  tf_init
+  terraform get # modules
+  if [[ "${operation}" == "create" ]]; then
+    terraform plan -var task_image_tag="$IMAGE_TAG" -var-file=$NHS_ENVIRONMENT.tfvars $TARGET -out="nhs_deployment.tfplan"
+  elif [[ "${operation}" == "destroy" ]]; then
+    terraform plan -var task_image_tag=$IMAGE_TAG -var-file=$NHS_ENVIRONMENT.tfvars -out="nhs_deployment.tfplan" -destroy
+  else
+    echo "Unknown operation (should be create or destroy), got: ${operation}"
+    exit 1
+  fi
+}
+
+function tf_apply() {
+  tf_init
+  terraform get # modules
+  terraform apply nhs_deployment.tfplan
+  terraform output -json >tf-out.json
+}
+
+function generate_mesh_fqdn() {
+    if [[ "${NHS_ENVIRONMENT}" == prod ]]; then
+      if [ -z $MESH_MAILBOX_ID  ]; then
+        echo "Please specify  MESH_MAILBOX_ID"
+        exit 4
+      fi
+      export MESH_FQDN="$MESH_MAILBOX_ID.$ODS_CODE.api.mesh-client.nhs.uk"
+    else
+      export MESH_FQDN="nems-non-prod-$NHS_ENVIRONMENT.$ODS_CODE.api.mesh-client.nhs.uk"
+    fi
+}
+
+
+############################
+# Docker Related Functions #
+############################
+
+function get_aws_account_id() {
+  AWS_ACCOUNT_ID=$(dojo -c Dojofile-infra "aws sts get-caller-identity | jq -r .Account")
+}
+
+function docker_login() {
+  echo Logging in to Amazon ECR...
+  eval $(dojo -c Dojofile-infra "aws ecr get-login --no-include-email --region $AWS_DEFAULT_REGION")
+}
+
+function docker_login_and_export_repository_uri() {
+  docker_login
+  export REPOSITORY_URI="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME"
+}
+
+function pull_registrations_forwarder_image() {
+  SRC_IMAGE_NAME_AND_TAG="${AWS_ACCOUNT_ID}.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/registrations/mesh-inbox-s3-forwarder:${SOURCE_IMAGE_TAG}"
+  docker pull "$SRC_IMAGE_NAME_AND_TAG"
+  docker tag "$SRC_IMAGE_NAME_AND_TAG" "registrations/mesh-inbox-s3-forwarder:${SOURCE_IMAGE_TAG}"
+}
+
+function build_forwarder_image() {
+  fetch_redaction_utils
+  docker build --build-arg SOURCE_IMAGE_TAG=$SOURCE_IMAGE_TAG \
+               --build-arg UTILS_VERSION=$AWS_HELPERS_VERSION \
+               -t "$IMAGE_REPO_NAME:${IMAGE_TAG}" .
+}
+
+function push_forwarder_image_to_repo_ecr() {
+  IMAGE_FULL_URL="${REPOSITORY_URI}:${IMAGE_TAG}"
+  docker tag "$IMAGE_REPO_NAME:${IMAGE_TAG}" "$IMAGE_FULL_URL"
+  docker push "$IMAGE_FULL_URL"
+}
+
+function generate_csr {
+  keys_file_name="$1"
+  # If you intend to secure the URL https://www.yourdomain.com, then your CSR’s common name must be www.yourdomain.com
+  common_name="$2"
+  fqdn=$common_name
+
+  if [[ -z "$keys_file_name" ]]; then
+    echo "Keys filename missing"
+    exit 1
+  fi
+  if [[ -z "$common_name" ]]; then
+    echo "domain name missing"
+    exit 1
+  fi
+
+  echo "Preparing certificates for: ${keys_file_name} on ${fqdn}, common_name: ${common_name}"
+  export CERTIFICATES_DIR=csr
+  mkdir -p $CERTIFICATES_DIR
+
+  # 1. Create a config file for generating a Certificate Signing Request (CSR).
+  cat <<EOF >${CERTIFICATES_DIR}/csr.conf
+[ req ]
+default_bits = 2048
+prompt = no
+default_md = sha256
+req_extensions = req_ext
+distinguished_name = dn
+
+[ dn ]
+C = GB
+CN = ${common_name}
+
+[ req_ext ]
+subjectAltName = @alt_names
+
+[ alt_names ]
+DNS.1 = ${fqdn}
+
+[ v3_ext ]
+authorityKeyIdentifier=keyid,issuer:always
+basicConstraints=CA:FALSE
+keyUsage=keyEncipherment,dataEncipherment
+extendedKeyUsage=serverAuth,clientAuth
+subjectAltName=@alt_names
+EOF
+
+  # 2. Create a private key (${keys_file_name}.key) and then generate a certificate request (${keys_file_name}.csr) from it.
+  # https://www.openssl.org/docs/manmaster/man1/req.html
+  openssl genrsa -out ${keys_file_name}.key 2048
+  openssl req -new -key ${keys_file_name}.key -out ${keys_file_name}.csr -config ${CERTIFICATES_DIR}/csr.conf
+}
+
+###########
+## TASKS ##
+###########
+
+command="$1"
+case "${command}" in
+  tf)
+    check_env
+    dojo -c Dojofile-infra "bash"
+    ;;
+  _tf_plan_certs)
+    _assume_environment_role $NHS_ENVIRONMENT
+    tf_plan "$2" true
+    ;;
+  tf_plan_certs)
+    check_env
+    dojo -c Dojofile-infra "./tasks _tf_plan_certs $2"
+    ;;
+  _tf_plan)
+    _assume_environment_role $NHS_ENVIRONMENT
+    set_image_tag
+    tf_plan "$2" "$IMAGE_TAG"
+    ;;
+  tf_plan)
+    check_env
+    dojo -c Dojofile-infra "./tasks _tf_plan $2"
+    ;;
+  _tf_apply)
+    _assume_environment_role $NHS_ENVIRONMENT
+    tf_apply
+    ;;
+  tf_apply)
+    check_env
+    dojo -c Dojofile-infra "./tasks _tf_apply"
+    ;;
+  _csr)
+    check_env
+    if [ -z $ODS_CODE ]; then
+      echo "Please specify ODS_CODE"
+      exit 4
+    fi
+    fqdn="$ODS_CODE.nems.$NHS_ENVIRONMENT.non-prod.patient-deductions.nhs.uk"
+    generate_csr "$ODS_CODE-nems-$NHS_ENVIRONMENT" $fqdn
+    echo "The CSR has to be sent together with endpoint registration. Use the form below or ask endpoint admin to register it"
+    echo "https://digital.nhs.uk/forms/combined-endpoint-and-service-registration-request"
+    ;;
+    csr)
+     dojo -c Dojofile-infra "./tasks _csr"
+      ;;
+  _csr_nems_prod)
+    if [ -z $ODS_CODE ]; then
+      echo "Please specify ODS_CODE"
+      exit 4
+    fi
+    fqdn="nems-$ODS_CODE.nhsdigital.nhs.uk"
+    generate_csr "$ODS_CODE-nems-prod" $fqdn
+    ;;
+   csr_nems_prod)
+    dojo -c Dojofile-infra "./tasks _csr_nems_prod"
+    ;;
+
+  _csr_mesh)
+    check_env
+    if [ -z $ODS_CODE  ]; then
+      echo "Please specify ODS_CODE "
+      exit 4
+    fi
+    generate_mesh_fqdn
+    generate_csr "$ODS_CODE-mesh-$NHS_ENVIRONMENT" $MESH_FQDN
+    echo "For Non prod the CSR has to be added to mesh mailbox request form"
+    echo "https://digital.nhs.uk/services/message-exchange-for-social-care-and-health-mesh/messaging-exchange-for-social-care-and-health-apply-for-a-mailbox"
+    echo "Details on how to fill out the form is on confluence"
+    echo "https://gpitbjss.atlassian.net/wiki/spaces/TW/pages/11604721782/Requesting+a+MESH+mailbox"
+    ;;
+   csr_mesh)
+    dojo -c Dojofile-infra "./tasks _csr_mesh"
+    ;;
+
+  _get_authorisation_token)
+    _get_authorisation_token
+    ;;
+  get_authorisation_token)
+    check_env
+    dojo -c Dojofile-python "./tasks _get_authorisation_token"
+    ;;
+  _create_nems_subscription_and_update_ssm)
+    _assume_environment_role $NHS_ENVIRONMENT
+    set_nems_env
+    python3 create_subscription_and_update_ssm.py
+    echo Successfully processed subscription
+    ;;
+  create_nems_subscription_and_update_ssm)
+    dojo -c Dojofile-python "./tasks _create_nems_subscription_and_update_ssm"
+    ;;
+  _test_nems_subscriber)
+    get_local_tkw_subscriptions_env
+    pushd nems-subscriber && pip3 install -r requirements.txt && python3 -m pytest --capture=no
+    ;;
+  test_nems_subscriber)
+    dojo -c Dojofile-python "./tasks _test_nems_subscriber"
+    ;;
+  _create_nems_subscription)
+    set_nems_env
+    python3 create_subscription.py
+    ;;
+  create_nems_subscription)
+    dojo -c Dojofile-python "./tasks _create_nems_subscription"
+    ;;
+  _read_nems_subscription)
+    set_nems_env
+    python3 read_subscription.py
+    ;;
+  read_nems_subscription)
+    dojo -c Dojofile-python "./tasks _read_nems_subscription"
+    ;;
+  _delete_nems_subscription)
+    set_nems_env
+    python3 delete_subscription.py
+    ;;
+  delete_nems_subscription)
+    dojo -c Dojofile-python "./tasks _delete_nems_subscription"
+    ;;
+  _print_create_subscription)
+    set_nems_env
+    python3 print_create_subscription.py
+    ;;
+  print_create_subscription)
+    dojo -c Dojofile-python "./tasks _print_create_subscription"
+    ;;
+  _print_read_subscription)
+    set_nems_env
+    python3 print_read_subscription.py
+    ;;
+  print_read_subscription)
+    dojo -c Dojofile-python "./tasks _print_read_subscription"
+    ;;
+  _print_delete_subscription)
+    set_nems_env
+    python3 print_delete_subscription.py
+    ;;
+  print_delete_subscription)
+    dojo -c Dojofile-python "./tasks _print_delete_subscription"
+    ;;
+  promote_docker_image)
+    check_env
+    set_image_tag
+    promote_docker_image "$IMAGE_REPO_NAME:$IMAGE_TAG" "$NHS_ENVIRONMENT"
+    ;;
+  _venv)
+    setup_venv
+    ;;
+  _wait_ecs)
+    _assume_environment_role $NHS_ENVIRONMENT
+    aws ecs wait services-stable \
+      --region $AWS_DEFAULT_REGION \
+      --cluster $NHS_ENVIRONMENT-${NHS_SERVICE}-ecs-cluster \
+      --services $NHS_ENVIRONMENT-mesh-forwarder-service
+    ;;
+  wait_ecs)
+    check_env
+    dojo -c Dojofile-infra "./tasks _wait_ecs"
+    ;;
+  fetch_utils)
+    fetch_redaction_utils
+    ;;
+  build_docker)
+    set_image_tag
+    build_forwarder_image
+    ;;
+  _push_forwarder_image_to_repo_ecr)
+    if [ -z $SOURCE_IMAGE_TAG ]; then
+      echo "Please set SOURCE_IMAGE_TAG environment variable"
+      exit 1
+    fi
+    set_image_tag
+    get_aws_account_id
+    docker_login_and_export_repository_uri
+    pull_registrations_forwarder_image
+    build_forwarder_image
+    push_forwarder_image_to_repo_ecr
+    ;;
+  build_lambdas)
+    build_lambdas
+    ;;
+  *)
+    echo "Invalid command: '${command}'"
+    exit 1
+    ;;
+esac
+set +e
