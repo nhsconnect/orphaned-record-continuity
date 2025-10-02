@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'services/ehr-repo/**'
+      - 'services/**'
       - '.github/workflows/service-ci.yml'
 
   pull_request:
@@ -16,7 +16,7 @@ on:
     branches:
       - main
     paths:
-      - 'services/ehr-repo/**'
+      - 'services/**'
       - '.github/workflows/service-ci.yml'
 
 permissions:
