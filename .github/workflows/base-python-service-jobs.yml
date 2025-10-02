@@ -66,19 +66,15 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: 3.9
-      - name: Open Service directory
-        run: |
-          cd ./services/${{ inputs.service }}
-          ls -la
+    
+      - name: Make virtual environment
+        run: | 
+          python3 -m venv venv
       
-      - name: List files
-        run: |
       - name: Start virtual environment
         run: |
           ls -la
           source venv/bin/activate
-          echo PATH=$PATH >> $GITHUB_ENV
-
       - name: Test with pytest
         run: |
           ./tasks test_nems_subscriber
