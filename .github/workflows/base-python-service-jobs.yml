@@ -55,15 +55,13 @@ jobs:
   run_tests:
     name: Run Tests
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: './services/${{ inputs.service }}'
     steps:
       - name: Checkout
         uses: actions/checkout@v5
         with:
           repository: 'nhsconnect/prm-repo-ehr-repository'
           ref: PRM-509
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
