@@ -69,7 +69,7 @@ jobs:
 
       - name: Make virtual environment
         run: | 
-          make env
+          python3 -m venv venv
       
       - name: Start virtual environment
         run: |
