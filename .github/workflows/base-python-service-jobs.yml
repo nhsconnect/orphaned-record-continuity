@@ -69,10 +69,10 @@ jobs:
       - name: Open Service directory
         run: |
           cd ./services/${{ inputs.service }}
+          ls -la
       
       - name: List files
         run: |
-          ls -la
       - name: Start virtual environment
         run: |
           ls -la
