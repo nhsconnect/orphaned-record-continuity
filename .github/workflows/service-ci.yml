@@ -59,7 +59,7 @@ jobs:
           environment: dev
           is_deployment: ${{ github.ref == 'refs/heads/main' }}
           skip_build_and_publish: ${{ github.ref != 'refs/heads/main' }}
-    secrets: inherit
+        secrets: inherit
 
   ehr-out-service:
     needs: get_changed_files
@@ -78,7 +78,7 @@ jobs:
           environment: dev
           is_deployment: ${{ github.ref == 'refs/heads/main' }}
           skip_build_and_publish: ${{ github.ref != 'refs/heads/main' }}
-    secrets: inherit
+        secrets: inherit
 
   e2e-testing:
     name: End to End
