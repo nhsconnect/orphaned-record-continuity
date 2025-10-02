@@ -75,7 +75,7 @@ jobs:
         run: npm run test
 
       - name: Run Integration Tests
-        working-directory: ./services/ehr-repo
+        working-directory: ./services/${{ inputs.service }}
         env:
           S3_BUCKET_NAME: test-bucket
           LOCALSTACK_URL: http://localhost:4566
