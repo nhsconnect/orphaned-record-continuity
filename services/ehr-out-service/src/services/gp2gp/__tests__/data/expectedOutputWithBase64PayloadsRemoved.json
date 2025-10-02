@@ -1,0 +1,32 @@
+{
+  "payload": "<COPC_IN000001UK01><content></content></COPC_IN000001UK01>",
+  "attachments": [
+    {
+      "payload": "[REMOVED]",
+      "is_base64": true,
+      "content_id": "Attachment1@e-mis.com/EMISWeb/GP2GP2.2A",
+      "content_type": "text/plain"
+    },
+    {
+      "payload": "[REMOVED]",
+      "is_base64": true,
+      "content_id": "Attachment1@e-mis.com/EMISWeb/GP2GP2.2A",
+      "content_type": "application/octet-stream"
+    },
+    {
+      "payload": "[REMOVED]",
+      "is_base64": true,
+      "content_id": "Attachment1@e-mis.com/EMISWeb/GP2GP2.2A",
+      "content_type": "image/jpeg",
+      "description": "Filename=\"D695F543-7F04-4B27-81DC-AA238831DEA9_IMG_01_0.jpg\" ContentType=image/jpeg Compressed=No LargeAttachment=No OriginalBase64=No Length=4718592"
+    }
+  ],
+  "external_attachments": [
+    {
+      "document_id": "_89294396-CC6E-4E4A-B88F-EFB7A25EF35D",
+      "message_id": "7B3DC7FB-8864-4388-BB1D-238076101E69",
+      "description": "Filename=\"D695F543-7F04-4B27-81DC-AA238831DEA9_IMG_01_1.jpg\" ContentType=image/jpeg Compressed=No LargeAttachment=No OriginalBase64=No Length=1320132",
+      "title": "\"D695F543-7F04-4B27-81DC-AA238831DEA9_IMG_01_1.jpg\""
+    }
+  ]
+}

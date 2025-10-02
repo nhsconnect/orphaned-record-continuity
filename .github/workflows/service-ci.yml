@@ -44,13 +44,40 @@ jobs:
           
   ehr-repo:
     needs: get_changed_files
+    runs-on: ubuntu-latest
     if: contains(needs.get_changed_files.outputs.changed, 'services/ehr-repo') || contains(needs.get_changed_files.outputs.changed, '.github/')
-    uses: './.github/workflows/base-node-service-jobs.yml'
-    with:
-      service: ehr-repo
-      environment: dev
-      is_deployment: ${{ github.ref == 'refs/heads/main' }}
-      skip_build_and_publish: ${{ github.ref != 'refs/heads/main' }}
+    steps:
+      - name: Test EHR Repo
+        uses: './.github/workflows/test-node-service.yml'
+        with:
+          service: ehr-repo
+
+      - name: EHR job
+        uses: './.github/workflows/base-node-service-jobs.yml'
+        with:
+          service: ehr-repo
+          environment: dev
+          is_deployment: ${{ github.ref == 'refs/heads/main' }}
+          skip_build_and_publish: ${{ github.ref != 'refs/heads/main' }}
+    secrets: inherit
+
+  ehr-out-service:
+    needs: get_changed_files
+    runs-on: ubuntu-latest
+    if: contains(needs.get_changed_files.outputs.changed, 'services/ehr-out-service') || contains(needs.get_changed_files.outputs.changed, '.github/')
+    steps:
+      - name: Test EHR Repo
+        uses: './.github/workflows/test-node-service.yml'
+        with:
+          service: ehr-out-service
+
+      - name: EHR Out Service Job
+        uses: './.github/workflows/base-node-service-jobs.yml'
+        with:
+          service: ehr-out-service
+          environment: dev
+          is_deployment: ${{ github.ref == 'refs/heads/main' }}
+          skip_build_and_publish: ${{ github.ref != 'refs/heads/main' }}
     secrets: inherit
 
   e2e-testing:

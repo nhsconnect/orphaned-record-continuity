@@ -1,0 +1,59 @@
+{
+  "TableName": "local-test-db",
+  "KeySchema": [
+    {
+      "AttributeName": "InboundConversationId",
+      "KeyType": "HASH"
+    },
+    {
+      "AttributeName": "Layer",
+      "KeyType": "RANGE"
+    }
+  ],
+  "AttributeDefinitions": [
+    {
+      "AttributeName": "InboundConversationId",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "Layer",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "NhsNumber",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "OutboundConversationId",
+      "AttributeType": "S"
+    }
+  ],
+  "GlobalSecondaryIndexes": [
+    {
+      "IndexName": "OutboundConversationIdSecondaryIndex",
+      "KeySchema": [
+        {
+          "AttributeName": "OutboundConversationId",
+          "KeyType": "HASH"
+        }
+      ],
+      "Projection": {
+        "ProjectionType": "ALL"
+      }
+    },
+    {
+      "IndexName": "NhsNumberSecondaryIndex",
+      "KeySchema": [
+        {
+          "AttributeName": "NhsNumber",
+          "KeyType": "HASH"
+        }
+      ],
+      "Projection": {
+        "ProjectionType": "ALL"
+      }
+    }
+  ],
+  "BillingMode": "PAY_PER_REQUEST"
+}
+
