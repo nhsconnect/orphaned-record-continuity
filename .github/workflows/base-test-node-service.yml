@@ -1,4 +1,4 @@
-name: Test Node Service
+name: Base Test Node Service
 
 on:
   workflow_call:
