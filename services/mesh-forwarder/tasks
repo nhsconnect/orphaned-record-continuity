@@ -394,7 +394,7 @@ case "${command}" in
     pushd nems-subscriber && pip3 install -r requirements.txt && python3 -m pytest --capture=no
     ;;
   test_nems_subscriber)
-    dojo -c Dojofile-python "./tasks _test_nems_subscriber"
+    ./tasks _test_nems_subscriber
     ;;
   _create_nems_subscription)
     set_nems_env
