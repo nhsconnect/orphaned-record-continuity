@@ -2,15 +2,13 @@ name: Services CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - 'services/ehr-repo/**'
       - '.github/workflows/service-ci.yml'
 
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
     paths:
       - 'services/ehr-repo/**'
       - '.github/workflows/service-ci.yml'
@@ -39,12 +37,11 @@ jobs:
   ehr-repo:
     needs: get_changed_files
     if: contains(needs.get_changed_files.outputs.changed, 'services/ehr-repo') || contains(needs.get_changed_files.outputs.changed, '.github/')
-    uses: './.github/workflows/base-node-service-jobs.yml'
+    uses: ./.github/workflows/base-node-service-jobs.yml
     with:
       service: ehr-repo
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
-      enable_end_to_end_testing: false
       skip_build_and_publish: ${{ github.ref != 'refs/heads/main' }}
 
   e2e-testing:
