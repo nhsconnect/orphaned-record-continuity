@@ -48,7 +48,6 @@ jobs:
       service: ehr-repo
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
-      enable_end_to_end_testing: false
       skip_build_and_publish: ${{ github.ref != 'refs/heads/main' }}
 
   e2e-testing:
