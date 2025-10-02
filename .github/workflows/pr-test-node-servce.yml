@@ -31,7 +31,7 @@ jobs:
     name: Test EHR Repo
     needs: get_changed_files
     if: contains(needs.get_changed_files.outputs.changed, 'services/ehr-repo') || contains(needs.get_changed_files.outputs.changed, '.github/')
-    uses: './.github/workflows/base-node-service-jobs.yml'
+    uses: './.github/workflows/base-test-node-service.yml'
     with:
       service: ehr-repo
 
@@ -39,6 +39,6 @@ jobs:
     needs: get_changed_files
     name: Test EHR Out Service
     if: contains(needs.get_changed_files.outputs.changed, 'services/ehr-out-service') || contains(needs.get_changed_files.outputs.changed, '.github/')
-    uses: './.github/workflows/base-node-service-jobs.yml'
+    uses: './.github/workflows/base-test-node-service.yml'
     with:
       service: ehr-out-service
