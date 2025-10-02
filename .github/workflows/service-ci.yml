@@ -62,7 +62,7 @@ jobs:
     secrets: inherit
     uses: './.github/workflows/base-node-service-jobs.yml'
     with:
-      service: ehr-out-service/terraform
+      service: ehr-out-service
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
       skip_build_and_publish: ${{ github.ref != 'refs/heads/main' }}

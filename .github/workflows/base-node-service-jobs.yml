@@ -110,7 +110,7 @@ jobs:
           
   deploy_infra:
     name: Deploy EHR Infrastructure
-    uses: nhsconnect/prm-deductions-infra/.github/workflows/deploy-stack.yml@PRM-495
+    uses: nhsconnect/prm-deductions-infra/.github/workflows/deploy-stack.yml@PRM-481-1
     with:
       stack: ${{ inputs.service }}
       environment: ${{ inputs.environment }}
