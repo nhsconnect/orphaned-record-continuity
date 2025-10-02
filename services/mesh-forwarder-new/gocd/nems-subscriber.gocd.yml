@@ -1,0 +1,85 @@
+format_version: 4
+pipelines:
+  'nems-subscriber':
+    group: continuity-service
+    label_template: "${git[:8]}"
+    materials:
+      git:
+        type: configrepo
+        whitelist:
+          - nems-subscriber/**/*.*
+          - gocd/nems-subscriber.gocd.yml
+    stages:
+      - run_tests:
+          clean_workspace: false
+          jobs:
+            test:
+              resources:
+                - docker
+              tasks:
+                - exec:
+                    command: /bin/bash
+                    arguments:
+                      - -c
+                      - ./tasks test_nems_subscriber
+      - dev:
+          clean_workspace: true
+          jobs:
+            subscribe:
+              resources:
+                - docker
+              environment_variables:
+                NHS_ENVIRONMENT: dev
+              tasks:
+                - exec:
+                    command: /bin/bash
+                    arguments:
+                      - -c
+                      - ./tasks create_nems_subscription_and_update_ssm
+      - test:
+          clean_workspace: true
+          jobs:
+            subscribe:
+              resources:
+                - docker
+              environment_variables:
+                NHS_ENVIRONMENT: test
+              tasks:
+                - exec:
+                    command: /bin/bash
+                    arguments:
+                      - -c
+                      - ./tasks create_nems_subscription_and_update_ssm
+      - pre-prod:
+          clean_workspace: true
+          jobs:
+            subscribe:
+              resources:
+                - docker
+              environment_variables:
+                NHS_ENVIRONMENT: pre-prod
+              tasks:
+                - exec:
+                    command: /bin/bash
+                    arguments:
+                      - -c
+                      - ./tasks create_nems_subscription_and_update_ssm
+
+      - prod:
+          approval:
+            type: manual
+            allow_only_on_success: true
+          clean_workspace: true
+          jobs:
+            subscribe:
+              resources:
+                - docker
+              environment_variables:
+                NHS_ENVIRONMENT: prod
+              tasks:
+                - exec:
+                    command: /bin/bash
+                    arguments:
+                      - -c
+                      - ./tasks create_nems_subscription_and_update_ssm
+
