@@ -66,7 +66,6 @@ jobs:
       skip_build_and_publish: ${{ github.ref != 'refs/heads/main' }}
     secrets: inherit
 
-
   e2e-testing:
     name: End to End
     if: ${{ vars.E2E_TESTS_ENABLED == 'true' && success() }}
