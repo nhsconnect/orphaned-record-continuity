@@ -5,14 +5,14 @@ on:
     branches:
       - main
     paths:
-      - 'services/**'
+      - 'services/ehr-repo/**'
       - '.github/workflows/service-ci.yml'
 
   pull_request:
     branches:
       - main
     paths:
-      - 'services/**'
+      - 'services/ehr-repo/**'
       - '.github/workflows/service-ci.yml'
 
 permissions:
