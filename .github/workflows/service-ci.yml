@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - PRM-495
     paths:
       - 'services/**'
       - '.github/workflows/service-ci.yml'
