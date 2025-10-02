@@ -1,5 +1,3 @@
-# TODO double check permissions - AWS
-# TODO where would/how would we like to promote images, use similar workflow from GP2GP repos?
 name: Build & Publish EHR Repository
 
 on:
