@@ -1,13 +1,5 @@
-name: Services CI
-
+name: Test Node Service
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'services/**'
-      - '.github/workflows/service-ci.yml'
-
   pull_request:
     types:
       - opened
@@ -15,14 +7,6 @@ on:
       - reopened
     branches:
       - main
-    paths:
-      - 'services/**'
-      - '.github/workflows/service-ci.yml'
-
-permissions:
-  pull-requests: write
-  id-token: write
-  contents: read
 
 jobs:
   get_changed_files:
@@ -41,33 +25,19 @@ jobs:
           git fetch origin ${{ github.event.pull_request.base.ref }}
           changed=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD | tr '\n' ' ')
           echo "changed=$changed" >> $GITHUB_OUTPUT
-          
-  ehr-repo:
+
+  test_ehr_repo:
+    name: Test EHR Repo
     needs: get_changed_files
-    secrets: inherit
     if: contains(needs.get_changed_files.outputs.changed, 'services/ehr-repo') || contains(needs.get_changed_files.outputs.changed, '.github/')
     uses: './.github/workflows/base-node-service-jobs.yml'
     with:
       service: ehr-repo
-      environment: dev
-      is_deployment: ${{ github.ref == 'refs/heads/main' }}
-      skip_build_and_publish: ${{ github.ref != 'refs/heads/main' }}
 
-
-  ehr-out-service:
+  test_ehr_out_service:
     needs: get_changed_files
+    name: Test EHR Out Service
     if: contains(needs.get_changed_files.outputs.changed, 'services/ehr-out-service') || contains(needs.get_changed_files.outputs.changed, '.github/')
-    secrets: inherit
     uses: './.github/workflows/base-node-service-jobs.yml'
     with:
       service: ehr-out-service
-      environment: dev
-      is_deployment: ${{ github.ref == 'refs/heads/main' }}
-      skip_build_and_publish: ${{ github.ref != 'refs/heads/main' }}
-
-  e2e-testing:
-    name: End to End
-    if: ${{ vars.E2E_TESTS_ENABLED == 'true' && success() }}
-    needs: [ehr-repo]
-    uses: ./.github/workflows/e2e.yml
-    secrets: inherit
