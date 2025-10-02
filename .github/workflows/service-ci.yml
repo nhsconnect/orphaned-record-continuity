@@ -28,6 +28,7 @@ permissions:
 
 jobs:
   get_changed_files:
+    name: Get change files
     runs-on: ubuntu-latest
     outputs:
       changed: ${{ steps.get_changes.outputs.changed }}
@@ -45,6 +46,7 @@ jobs:
           echo "changed=$changed" >> $GITHUB_OUTPUT
           
   ehr-repo:
+    name: EHR Repo CI
     needs: get_changed_files
     secrets: inherit
     if: contains(needs.get_changed_files.outputs.changed, 'services/ehr-repo') || contains(needs.get_changed_files.outputs.changed, '.github/')
@@ -57,6 +59,7 @@ jobs:
 
 
   ehr-out-service:
+    name: EHR Out Service CI
     needs: get_changed_files
     if: contains(needs.get_changed_files.outputs.changed, 'services/ehr-out-service') || contains(needs.get_changed_files.outputs.changed, '.github/')
     secrets: inherit
