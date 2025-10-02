@@ -16,6 +16,7 @@ on:
         type: choice
         options:
           - ehr-repo
+          - ehr-out-service
         required: true
         description: Which service to build and deploy
       is_deployment:
