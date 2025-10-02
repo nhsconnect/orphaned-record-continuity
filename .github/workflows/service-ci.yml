@@ -41,7 +41,6 @@ jobs:
           git fetch origin ${{ github.event.pull_request.base.ref }}
           changed=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD | tr '\n' ' ')
           echo "changed=$changed" >> $GITHUB_OUTPUT
-
           
   ehr-repo:
     needs: get_changed_files
@@ -52,6 +51,7 @@ jobs:
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
       skip_build_and_publish: ${{ github.ref != 'refs/heads/main' }}
+    secrets: inherit
 
   e2e-testing:
     name: End to End
