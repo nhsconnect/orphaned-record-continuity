@@ -46,3 +46,10 @@ jobs:
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
       enable_end_to_end_testing: false
       skip_build_and_publish: ${{ github.ref != 'refs/heads/main' }}
+
+  e2e-testing:
+    name: End to End
+    if: ${{ vars.E2E_TESTS_ENABLED == 'true' && success() }}
+    needs: [ehr-repo]
+    uses: ./.github/workflows/e2e.yml
+    secrets: inherit
