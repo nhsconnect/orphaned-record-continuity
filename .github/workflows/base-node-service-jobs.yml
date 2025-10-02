@@ -41,10 +41,6 @@ on:
         type: boolean
         default: false
         required: true
-      enable_end_to_end_testing:
-        type: boolean
-        default: false
-        required: true
       skip_build_and_publish:
         type: boolean
         default: false
