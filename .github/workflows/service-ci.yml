@@ -53,6 +53,18 @@ jobs:
       skip_build_and_publish: ${{ github.ref != 'refs/heads/main' }}
     secrets: inherit
 
+  mesh-forwarder:
+    needs: get_changed_files
+    if: contains(needs.get_changed_files.outputs.changed, 'services/mesh-forwarder') || contains(needs.get_changed_files.outputs.changed, '.github/')
+    uses: './.github/workflows/base-python-service-jobs.yml'
+    with:
+      service: mesh-forwarder
+      environment: dev
+      is_deployment: ${{ github.ref == 'refs/heads/main' }}
+      skip_build_and_publish: ${{ github.ref != 'refs/heads/main' }}
+    secrets: inherit
+
+
   e2e-testing:
     name: End to End
     if: ${{ vars.E2E_TESTS_ENABLED == 'true' && success() }}

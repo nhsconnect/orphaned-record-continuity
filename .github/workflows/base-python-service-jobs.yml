@@ -1,0 +1,147 @@
+name: Base Node Services Build and Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        options:
+          - dev
+          - pre-prod
+          - prod
+        required: true
+        default: dev
+        description: Which environment to build and deploy to?
+      service:
+        type: choice
+        options:
+          - mesh-forwarder
+        required: true
+        description: Which service to build and deploy
+      is_deployment:
+        type: boolean
+        default: false
+        description: Whether to deploy of not
+        required: true
+      skip_build_and_publish:
+        type: boolean
+        default: true
+        description: Whether to skip build_and_publish step
+
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        default: dev
+        required: true
+      service:
+        type: string
+        required: true
+      is_deployment:
+        type: boolean
+        default: false
+        required: true
+      skip_build_and_publish:
+        type: boolean
+        default: false
+        required: true
+
+permissions:
+  pull-requests: write
+  id-token: write
+  contents: read
+
+jobs:
+  run_tests:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: './services/${{ inputs.service }}'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.9
+
+      - name: Make virtual environment
+        run: | 
+          make env
+      
+      - name: Start virtual environment
+        run: |
+          ls -la
+          source venv/bin/activate
+          echo PATH=$PATH >> $GITHUB_ENV
+
+      - name: Test with pytest
+        run: |
+          ./tasks test_nems_subscriber
+
+  build_and_publish:
+    if: ${{ !inputs.skip_build_and_publish && inputs.is_deployment }}
+    name: Build & Publish
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    defaults:
+      run:
+        working-directory: './services/${{ inputs.service }}'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Clean Install
+        run: npm run build
+
+      - name: Configure AWS Credentials (Read/Write)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.IAM_ROLE }}
+          aws-region: ${{ vars.AWS_REGION }}
+          mask-aws-account-id: true
+          role-skip-session-tagging: true
+
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: docker build, tag, and publish
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          REPOSITORY: deductions/${{ inputs.service }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          TAG_ARGS=(-t "$REGISTRY/$REPOSITORY:$IMAGE_TAG" -t "$REGISTRY/$REPOSITORY:latest")
+          if [ -n "${REF_NAME:-}" ]; then
+            REF_TAG="${REF_NAME//\//-}"
+            TAG_ARGS+=(-t "$REGISTRY/$REPOSITORY:$REF_TAG")
+          fi
+
+          docker build "${TAG_ARGS[@]}" --build-arg BUILD_TAG="$IMAGE_TAG" .
+
+          docker push "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
+          docker push "$REGISTRY/$REPOSITORY:latest"
+
+          if [ -n "${REF_NAME:-}" ]; then
+            REF_TAG="${REF_NAME//\//-}"
+            docker push "$REGISTRY/$REPOSITORY:$REF_TAG"
+          fi  
+          
+  deploy_infra:
+    name: Deploy EHR Infrastructure
+    uses: nhsconnect/prm-deductions-infra/.github/workflows/deploy-stack.yml@PRM-495
+    with:
+      stack: ${{ inputs.service }}
+      environment: ${{ inputs.environment }}
+      is_deployment: ${{ inputs.is_deployment }}
+    secrets: inherit
