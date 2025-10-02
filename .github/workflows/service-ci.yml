@@ -9,6 +9,10 @@ on:
       - '.github/workflows/service-ci.yml'
 
   pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
     branches:
       - main
     paths:
