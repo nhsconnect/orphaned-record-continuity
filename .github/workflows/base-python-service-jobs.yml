@@ -66,11 +66,13 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: 3.9
-
-      - name: Make virtual environment
-        run: | 
-          python3 -m venv venv
+      - name: Open Service directory
+        run: |
+          cd ./services/${{ inputs.service }}
       
+      - name: List files
+        run: |
+          ls -la
       - name: Start virtual environment
         run: |
           ls -la
