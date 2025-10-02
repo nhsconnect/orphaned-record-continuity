@@ -1,4 +1,0 @@
-PyJWT[crypto]
-requests
-pytest
-boto3
