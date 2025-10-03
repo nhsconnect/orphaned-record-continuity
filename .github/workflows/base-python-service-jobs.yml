@@ -125,13 +125,12 @@ jobs:
             TAG_ARGS+=(-t "$ECR_URI:$REF_TAG")
           fi
           docker build "${TAG_ARGS[@]}" --build-arg IMAGE_TAG="$IMAGE_TAG" --build-arg ENV=${{steps.auth.outputs.aws-account-id}} .
-
-        # docker push "$ECR_URI:$IMAGE_TAG"
-        # docker push "$ECR_URI:latest"
-        # if [ -n "${GITHUB_REF_NAME:-}" ]; then
-        #   REF_TAG="${GITHUB_REF_NAME//\//-}"
-        #   docker push "$ECR_URI:$REF_TAG"
-        # fi
+          docker push "$ECR_URI:$IMAGE_TAG"
+          docker push "$ECR_URI:latest"
+          if [ -n "${GITHUB_REF_NAME:-}" ]; then
+            REF_TAG="${GITHUB_REF_NAME//\//-}"
+            docker push "$ECR_URI:$REF_TAG"
+          fi
   deploy_infra:
     name: Deploy EHR Infrastructure
     uses: nhsconnect/prm-deductions-infra/.github/workflows/deploy-stack.yml@PRM-495
