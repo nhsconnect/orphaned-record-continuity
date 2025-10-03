@@ -1,0 +1,123 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "ehr-out-service to handle the EHR transfers out from the repository",
+    "version": "1.0.0",
+    "title": "ehr-out-service"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "/health"
+        ],
+        "summary": "Checks health of api",
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful retrieval",
+            "schema": {
+              "$ref": "#/definitions/healthCheckResponse"
+            }
+          },
+          "500": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/errorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/registration-requests/{conversationId}": {
+      "get": {
+        "tags": [
+          "/registration-requests/{conversationId}"
+        ],
+        "summary": "Retrieves the status and details of a given EHR out transfer (aka registration request)",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversationId",
+            "description": "Conversation Id (must be UUID)",
+            "required": true,
+            "type": "string",
+            "format": "uuid"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved"
+          },
+          "401": {
+            "description": "Authorization header missing"
+          },
+          "403": {
+            "description": "Authorization key invalid"
+          },
+          "404": {
+            "description": "Conversation ID/Registration request not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          },
+          "503": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/errorResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    }
+  },
+  "securityDefinitions": {
+    "api_key": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header"
+    }
+  },
+  "definitions": {
+    "errorResponse": {
+      "type": "object",
+      "properties": {
+        "errors": {
+          "type": "array",
+          "description": "error message",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "healthCheckResponse": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "Version number"
+        },
+        "description": {
+          "type": "string",
+          "description": "Describes the component"
+        },
+        "status": {
+          "type": "string",
+          "description": "Tells you if the service is running"
+        },
+        "nhsEnvironment": {
+          "type": "string",
+          "description": "Environment - test, dev etc."
+        }
+      }
+    }
+  }
+}
