@@ -31,10 +31,6 @@ for command in "$@"
 do
   echo "--- ${command} ---"
   case "${command}" in
-    test_unit)
-        devenv
-        pipenv run test
-        ;;
     format)
         pipenv run format-import
         pipenv run format
@@ -72,6 +68,12 @@ do
         echo "./tasks validate" > .git/hooks/pre-commit
         chmod +x .git/hooks/pre-commit
         pipenv install -d
+        ;;
+    test_unit)
+        echo "./tasks validate" > .git/hooks/pre-commit
+        chmod +x .git/hooks/pre-commit
+        pipenv install -d
+        pipenv run test
         ;;
     dep)
         ./tasks check-deps > audit-output.txt
