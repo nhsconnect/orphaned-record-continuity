@@ -7,7 +7,7 @@ ENV BUILD_TAG=${IMAGE_TAG}
 
 RUN addgroup --system mesh && adduser --ingroup mesh --system mesh
 COPY . /mesh-forwarder
-COPY requirements.txt /mesh-forwarder/requirements.txt
+
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 RUN pip install --user pipenv
