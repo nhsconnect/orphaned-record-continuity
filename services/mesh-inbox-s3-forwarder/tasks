@@ -70,8 +70,6 @@ do
         pipenv install -d
         ;;
     test_unit)
-        echo "./tasks validate" > .git/hooks/pre-commit
-        chmod +x .git/hooks/pre-commit
         pipenv install -d
         pipenv run test
         ;;
