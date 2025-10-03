@@ -41,10 +41,6 @@ on:
         type: boolean
         default: false
         required: true
-      tests_enabled:
-        type: boolean
-        default: false
-        required: true
       skip_build_and_publish:
         type: boolean
         default: false
@@ -57,7 +53,6 @@ permissions:
 
 jobs:
   run_tests:
-    if: ${{ inputs.tests_enabled }}
     name: Run Tests
     runs-on: ubuntu-latest
     defaults:
@@ -89,11 +84,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-
       - name: Login to Amazon ECR
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
-
       - name: docker build, tag, and publish
         env:
           REF_NAME: ${{ github.ref_name }}
@@ -117,7 +110,6 @@ jobs:
             REF_TAG="${REF_NAME//\//-}"
             docker push "$REGISTRY/$REPOSITORY:$REF_TAG"
           fi  
-          
   deploy_infra:
     name: Deploy EHR Infrastructure
     uses: nhsconnect/prm-deductions-infra/.github/workflows/deploy-stack.yml@PRM-495
