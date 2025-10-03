@@ -16,5 +16,4 @@ mesh_inbox_s3_forwarder.egg-info
 audit-output.txt
 htmlcov/
 samples/
-requirements.txt
 
