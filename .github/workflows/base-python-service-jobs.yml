@@ -84,10 +84,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
              
+
       - name: Set up Python 3.9
         uses: actions/setup-python@v5
         with:
           python-version: 3.9
+
 
       - name: Configure AWS credentials
         id: auth
@@ -98,9 +100,11 @@ jobs:
           role-skip-session-tagging: true
           aws-region: ${{ vars.AWS_REGION }}
  
+
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
+
 
       - name: Get ECR repository URI from SSM
         id: ecr-repo
@@ -111,12 +115,8 @@ jobs:
           echo "::add-mask::$uri"
           echo "uri=$uri" >> $GITHUB_OUTPUT
 
-      # - name: Make virtual environment
-      #   run: |
-      #     python -m pip install -U pipenv
-      #     ./tasks devenv
 
-      - name: Build and Push Docker Image
+      - name: Build Docker Image
         env:
           REF_NAME: ${{ github.ref_name }}
           ECR_URI: ${{ steps.ecr-repo.outputs.uri }}
@@ -128,16 +128,27 @@ jobs:
             TAG_ARGS+=(-t "$ECR_URI:$REF_TAG")
           fi
           docker build "${TAG_ARGS[@]}" --build-arg IMAGE_TAG="$IMAGE_TAG" --build-arg ENV=${{steps.auth.outputs.aws-account-id}} .
+
+
+      - name: Push Docker Image
+        if: ${{ inputs.is_deployment }}
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          ECR_URI: ${{ steps.ecr-repo.outputs.uri }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
           docker push "$ECR_URI:$IMAGE_TAG"
           docker push "$ECR_URI:latest"
           if [ -n "${GITHUB_REF_NAME:-}" ]; then
             REF_TAG="${GITHUB_REF_NAME//\//-}"
             docker push "$ECR_URI:$REF_TAG"
           fi
-          
+
+
   deploy_infra:
     if: ${{ inputs.deploy_infra }}
     name: Deploy EHR Infrastructure
+    needs: [ build-and-publish-service ]
     uses: nhsconnect/prm-deductions-infra/.github/workflows/deploy-stack.yml@PRM-495
     with:
       stack: ${{ inputs.service }}
