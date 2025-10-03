@@ -12,8 +12,7 @@ COPY . /mesh-forwarder
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-RUN cd /mesh-forwarder 
-RUN ls -la
+RUN cd /mesh-forwarder && ls -la
 RUN pip install -r requirements.txt
 
 RUN chown -R mesh:mesh /mesh-forwarder
