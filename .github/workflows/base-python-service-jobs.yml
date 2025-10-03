@@ -41,6 +41,10 @@ on:
         type: boolean
         default: false
         required: true
+      tests_enabled:
+        type: boolean
+        default: false
+        required: true
       skip_build_and_publish:
         type: boolean
         default: false
@@ -53,6 +57,7 @@ permissions:
 
 jobs:
   run_tests:
+    if: ${{ inputs.tests_enabled }}
     name: Run Tests
     runs-on: ubuntu-latest
     defaults:
@@ -64,25 +69,14 @@ jobs:
         with:
           repository: 'nhsconnect/prm-repo-ehr-repository'
           ref: PRM-509
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: 3.9
-    
-      - name: Make virtual environment
-        run: | 
-
-          python3 -m venv venv
-      
-      - name: Start virtual environment
-        run: |
-          ls -la
-          source venv/bin/activate
       - name: Test with pytest
         run: |
           ./tasks test_nems_subscriber
-
+  
   build_and_publish:
     if: ${{ !inputs.skip_build_and_publish && inputs.is_deployment }}
     name: Build & Publish
@@ -95,21 +89,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Setup Node
-        uses: actions/setup-node@v5
-        with:
-          node-version: 22
-
-      - name: Clean Install
-        run: npm run build
-
-      - name: Configure AWS Credentials (Read/Write)
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.IAM_ROLE }}
-          aws-region: ${{ vars.AWS_REGION }}
-          mask-aws-account-id: true
-          role-skip-session-tagging: true
 
       - name: Login to Amazon ECR
         id: ecr-login
