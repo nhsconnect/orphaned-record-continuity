@@ -41,6 +41,9 @@ on:
         type: boolean
         default: false
         required: true
+      deploy_infra:
+        type: boolean
+        default: true
       skip_build_and_publish:
         type: boolean
         default: false
@@ -131,7 +134,9 @@ jobs:
             REF_TAG="${GITHUB_REF_NAME//\//-}"
             docker push "$ECR_URI:$REF_TAG"
           fi
+          
   deploy_infra:
+    if: ${{ inputs.deploy_infra }}
     name: Deploy EHR Infrastructure
     uses: nhsconnect/prm-deductions-infra/.github/workflows/deploy-stack.yml@PRM-495
     with:

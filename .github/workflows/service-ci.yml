@@ -64,6 +64,7 @@ jobs:
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
       skip_build_and_publish: ${{ github.ref != 'refs/heads/main' }}
+      deploy_infra: false
     secrets: inherit
 
   mesh-forwarder:
