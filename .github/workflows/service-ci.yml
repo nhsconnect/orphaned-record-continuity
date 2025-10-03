@@ -62,12 +62,12 @@ jobs:
     with:
       service: mesh-inbox-s3-forwarder
       environment: dev
-      is_deployment: true
+      is_deployment: ${{ github.ref == 'refs/heads/main' }}
       skip_build_and_publish: ${{ github.ref != 'refs/heads/main' }}
     secrets: inherit
 
   mesh-forwarder:
-    needs: [ get_changed_files ]
+    needs: [ get_changed_files, mesh-inbox-s3-forwarder ]
     if: contains(needs.get_changed_files.outputs.changed, 'services/mesh-forwarder') || contains(needs.get_changed_files.outputs.changed, '.github/')
     uses: './.github/workflows/base-python-service-jobs.yml'
     with:
