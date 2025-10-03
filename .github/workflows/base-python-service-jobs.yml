@@ -102,7 +102,7 @@ jobs:
         id: ecr-repo
         run: |
           uri=$(aws ssm get-parameter \
-          --name "/repo/${{ vars.AWS_ENVIRONMENT }}/ecr/url/${{ inputs.service }}" \
+          --name "/repo/${{ vars.AWS_ENVIRONMENT }}/prm-deductions-ehr-repository/ecr/url/${{ inputs.service }}" \
           --query "Parameter.Value" --output text)
           echo "::add-mask::$uri"
           echo "uri=$uri" >> $GITHUB_OUTPUT
