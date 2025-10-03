@@ -78,6 +78,7 @@ jobs:
   build-and-publish-service:
     environment: ${{ inputs.environment }}
     runs-on: ubuntu-latest
+    needs: [ run_tests ]
     defaults:
       run:
         working-directory: ./services/${{ inputs.service }}

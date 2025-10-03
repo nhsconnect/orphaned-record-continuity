@@ -110,7 +110,7 @@ describe('auth', () => {
     });
 
     it('should log the method, url and partial api key when a request is unsuccessful', async () => {
-      const logMessage = `Unsuccessful Request: GET /registration-requests/${conversationId}, API Key: ******key`;
+      const logMessage = `Unsuccessful Request: GET /registration-requests/${conversationId}, Invalid API Key presented`;
       await request(testApp)
         .get(`/registration-requests/${conversationId}`)
         .set('Authorization', 'incorrect-key');
