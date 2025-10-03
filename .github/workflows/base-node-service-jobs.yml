@@ -52,10 +52,86 @@ permissions:
   id-token: write
   contents: read
 
+env:
+  S3_BUCKET_NAME: test-bucket
+  LOCALSTACK_URL: http://localhost:4566
+  DYNAMODB_NAME: local-test-db
+  DYNAMODB_LOCAL_ENDPOINT: http://localhost:4566
+  # LSIA... keys are valid for localstack
+  AWS_ACCESS_KEY_ID: LSIA5678901234567890
+  AWS_SECRET_ACCESS_KEY: LSIA5678901234567890
+  SERVICE_URL: http://localhost:3000
+
 jobs:
+  run_tests:
+    name: Lint, Unit, and Integration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract branch name
+        shell: bash
+        run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+        id: extract_branch
+
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.extract_branch.outputs.branch }}
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        working-directory: ./services/${{ inputs.service }}
+        run: npm install
+
+      - name: Start LocalStack
+        uses: LocalStack/setup-localstack@v0.2.4
+        with:
+          install-awslocal: 'true'
+
+      # https://docs.aws.amazon.com/cli/latest/reference/dynamodb/create-table.html
+      - name: Create AWS resources
+        run: |
+          awslocal dynamodb create-table --region ${{ vars.AWS_REGION }} --cli-input-json file://services/ehr-repo/scripts/local-test-db-scheme.json
+          awslocal s3 mb s3://$S3_BUCKET_NAME --region ${{ vars.AWS_REGION }}
+
+      - name: Run Unit Tests and Lint Checks
+        working-directory: ./services/${{ inputs.service }}
+        env:
+          S3_BUCKET_NAME: test-bucket
+          LOCALSTACK_URL: http://localhost:4566
+          DYNAMODB_NAME: local-test-db
+          DYNAMODB_LOCAL_ENDPOINT: http://localhost:4566
+          AWS_ACCESS_KEY_ID: LSIA5678901234567890
+          AWS_SECRET_ACCESS_KEY: LSIA5678901234567890
+          SERVICE_URL: http://localhost:3000
+          NHS_ENVIRONMENT: local
+          EHR_URL: http://localhost:3000
+          AUTHORIZATION_KEYS: auth-key-1
+        run: npm run test
+
+      - name: Run Integration Tests
+        working-directory: ./services/${{ inputs.service }}
+        env:
+          S3_BUCKET_NAME: test-bucket
+          LOCALSTACK_URL: http://localhost:4566
+          DYNAMODB_NAME: local-test-db
+          DYNAMODB_LOCAL_ENDPOINT: http://localhost:4566
+          AWS_ACCESS_KEY_ID: LSIA5678901234567890
+          AWS_SECRET_ACCESS_KEY: LSIA5678901234567890
+          SERVICE_URL: http://localhost:3000
+          NHS_ENVIRONMENT: local
+          EHR_URL: http://localhost:3000
+          AUTHORIZATION_KEYS: auth-key-1
+        run: npm run test:integration
+
+
   build_and_publish:
     if: ${{ !inputs.skip_build_and_publish && inputs.is_deployment }}
     name: Build & Publish
+    needs: [run_tests]
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     defaults:
@@ -111,6 +187,7 @@ jobs:
           
   deploy_infra:
     name: Deploy EHR Infrastructure
+    needs: [build_and_publish]
     uses: nhsconnect/prm-deductions-infra/.github/workflows/base-deploy-stack.yml@PRM-481-1
     with:
       stack: ${{ inputs.service }}
