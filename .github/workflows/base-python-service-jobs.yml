@@ -149,7 +149,7 @@ jobs:
     if: ${{ inputs.deploy_infra }}
     name: Deploy EHR Infrastructure
     needs: [ build-and-publish-service ]
-    uses: nhsconnect/prm-deductions-infra/.github/workflows/deploy-stack.yml@r0.1.1
+    uses: nhsconnect/prm-deductions-infra/.github/workflows/base-deploy-stack.yml@r0.1.1
     with:
       stack: ${{ inputs.service }}
       environment: ${{ inputs.environment }}
