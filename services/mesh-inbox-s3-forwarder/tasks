@@ -70,6 +70,7 @@ do
         pipenv install -d
         ;;
     test_unit)
+        python -m pip install -U pipenv
         pipenv install -d
         pipenv run test
         ;;
