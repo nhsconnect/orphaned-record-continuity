@@ -67,7 +67,7 @@ jobs:
     secrets: inherit
 
   mesh-forwarder:
-    needs: [ get_changed_files, mesh-inbox-s3-forwarder ]
+    needs: [ get_changed_files ]
     if: contains(needs.get_changed_files.outputs.changed, 'services/mesh-forwarder') || contains(needs.get_changed_files.outputs.changed, '.github/')
     uses: './.github/workflows/base-python-service-jobs.yml'
     with:
