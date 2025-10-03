@@ -1,5 +1,6 @@
-ARG IMAGE_TAG
-FROM registrations/mesh-inbox-s3-forwarder:$IMAGE_TAG
+ARG IMAGE_TAG=image_tag \
+    ENV=bucket
+FROM 327778747031.dkr.ecr.eu-west-2.amazonaws.com/registrations/mesh-inbox-s3-forwarder:3c468a36
 
 RUN whoami
 USER root
