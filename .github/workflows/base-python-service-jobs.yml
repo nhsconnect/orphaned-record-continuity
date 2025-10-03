@@ -71,45 +71,66 @@ jobs:
       - name: Test with pytest
         run: |
           ./tasks test_nems_subscriber
-  
-  build_and_publish:
-    if: ${{ !inputs.skip_build_and_publish && inputs.is_deployment }}
-    name: Build & Publish
-    runs-on: ubuntu-latest
+
+  build-and-publish-service:
     environment: ${{ inputs.environment }}
+    runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: './services/${{ inputs.service }}'
+        working-directory: ./services/${{ inputs.service }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v4
+             
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.9
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          mask-aws-account-id: true
+          role-to-assume: ${{ secrets.IAM_ROLE }}
+          role-skip-session-tagging: true
+          aws-region: ${{ vars.AWS_REGION }}
+ 
       - name: Login to Amazon ECR
-        id: ecr-login
+        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
-      - name: docker build, tag, and publish
+
+      - name: Get ECR repository URI from SSM
+        id: ecr-repo
+        run: |
+          uri=$(aws ssm get-parameter \
+          --name "/registrations/${{ vars.AWS_ENVIRONMENT }}/data-pipeline/ecr/url/${{ inputs.service }}" \
+          --query "Parameter.Value" --output text)
+          echo "::add-mask::$uri"
+          echo "uri=$uri" >> $GITHUB_OUTPUT
+
+      - name: Make virtual environment
+        run: |
+          python -m pip install -U pipenv
+          ./tasks devenv
+
+      - name: Build and Push Docker Image
         env:
           REF_NAME: ${{ github.ref_name }}
-          REGISTRY: ${{ steps.ecr-login.outputs.registry }}
-          REPOSITORY: deductions/${{ inputs.service }}
+          ECR_URI: ${{ steps.ecr-repo.outputs.uri }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          set -euo pipefail
-          TAG_ARGS=(-t "$REGISTRY/$REPOSITORY:$IMAGE_TAG" -t "$REGISTRY/$REPOSITORY:latest")
+          TAG_ARGS=(-t "$ECR_URI:$IMAGE_TAG" -t "$ECR_URI:latest")
           if [ -n "${REF_NAME:-}" ]; then
             REF_TAG="${REF_NAME//\//-}"
-            TAG_ARGS+=(-t "$REGISTRY/$REPOSITORY:$REF_TAG")
+            TAG_ARGS+=(-t "$ECR_URI:$REF_TAG")
           fi
+          docker build "${TAG_ARGS[@]}" --build-arg SOURCE_IMAGE_TAG="$IMAGE_TAG" .
 
-          docker build "${TAG_ARGS[@]}" --build-arg BUILD_TAG="$IMAGE_TAG" .
-
-          docker push "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
-          docker push "$REGISTRY/$REPOSITORY:latest"
-
-          if [ -n "${REF_NAME:-}" ]; then
-            REF_TAG="${REF_NAME//\//-}"
-            docker push "$REGISTRY/$REPOSITORY:$REF_TAG"
-          fi  
+        # docker push "$ECR_URI:$IMAGE_TAG"
+        # docker push "$ECR_URI:latest"
+        # if [ -n "${GITHUB_REF_NAME:-}" ]; then
+        #   REF_TAG="${GITHUB_REF_NAME//\//-}"
+        #   docker push "$ECR_URI:$REF_TAG"
+        # fi
   deploy_infra:
     name: Deploy EHR Infrastructure
     uses: nhsconnect/prm-deductions-infra/.github/workflows/deploy-stack.yml@PRM-495
