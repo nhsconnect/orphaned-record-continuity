@@ -102,15 +102,15 @@ jobs:
         id: ecr-repo
         run: |
           uri=$(aws ssm get-parameter \
-          --name "/registrations/${{ vars.AWS_ENVIRONMENT }}/data-pipeline/ecr/url/${{ inputs.service }}" \
+          --name "/repo/${{ vars.AWS_ENVIRONMENT }}/ecr/url/${{ inputs.service }}" \
           --query "Parameter.Value" --output text)
           echo "::add-mask::$uri"
           echo "uri=$uri" >> $GITHUB_OUTPUT
 
-      - name: Make virtual environment
-        run: |
-          python -m pip install -U pipenv
-          ./tasks devenv
+      # - name: Make virtual environment
+      #   run: |
+      #     python -m pip install -U pipenv
+      #     ./tasks devenv
 
       - name: Build and Push Docker Image
         env:
