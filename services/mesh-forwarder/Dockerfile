@@ -1,6 +1,6 @@
 ARG IMAGE_TAG=image_tag \
     ENV=bucket
-FROM ${ENV}.dkr.ecr.eu-west-2.amazonaws.com/registrations/mesh-inbox-s3-forwarder:latest
+FROM ${ENV}.dkr.ecr.eu-west-2.amazonaws.com/rdeductions/mesh-inbox-s3-forwarder:latest
 
 RUN whoami
 USER root
