@@ -10,7 +10,7 @@ COPY . /mesh-forwarder
 
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
-RUN pip install --user pipenv
+RUN pip install pipenv
 RUN cd /mesh-forwarder && pipenv install
 
 RUN chown -R mesh:mesh /mesh-forwarder
