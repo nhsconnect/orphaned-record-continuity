@@ -32,6 +32,7 @@ do
   echo "--- ${command} ---"
   case "${command}" in
     test_unit)
+        devenv
         pipenv run test
         ;;
     format)
