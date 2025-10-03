@@ -31,7 +31,7 @@ for command in "$@"
 do
   echo "--- ${command} ---"
   case "${command}" in
-    test)
+    test_unit)
         pipenv run test
         ;;
     format)
