@@ -6,7 +6,9 @@ on:
       - main
       - PRM-495
     paths:
-      - 'services/**'
+      - 'services/ehr-repo/**'
+      - 'services/mesh-forwarder/**'
+      - 'services/ehr-out-service/**'
       - '.github/workflows/service-ci.yml'
 
   pull_request:
@@ -18,7 +20,9 @@ on:
       - main
       - PRM-495
     paths:
-      - 'services/**'
+      - 'services/ehr-repo/**'
+      - 'services/mesh-forwarder/**'
+      - 'services/ehr-out-service/**'
       - '.github/workflows/service-ci.yml'
 
 permissions:
@@ -69,6 +73,29 @@ jobs:
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
       skip_build_and_publish: ${{ github.ref != 'refs/heads/main' }}
+
+  mesh-inbox-s3-forwarder:
+    needs: get_changed_files
+    if: contains(needs.get_changed_files.outputs.changed, 'services/mesh-inbox-s3-forwarder') || contains(needs.get_changed_files.outputs.changed, '.github/')
+    uses: './.github/workflows/base-python-service-jobs.yml'
+    with:
+      service: mesh-inbox-s3-forwarder
+      environment: dev
+      is_deployment: ${{ github.ref == 'refs/heads/main' }}
+      skip_build_and_publish: ${{ github.ref != 'refs/heads/main' }}
+      deploy_infra: false
+    secrets: inherit
+
+  mesh-forwarder:
+    needs: [ get_changed_files, mesh-inbox-s3-forwarder ]
+    if: contains(needs.get_changed_files.outputs.changed, 'services/mesh-forwarder') || contains(needs.get_changed_files.outputs.changed, '.github/')
+    uses: './.github/workflows/base-python-service-jobs.yml'
+    with:
+      service: mesh-forwarder
+      environment: dev
+      is_deployment: ${{ github.ref == 'refs/heads/main' }}
+      skip_build_and_publish: ${{ github.ref != 'refs/heads/main' }}
+    secrets: inherit
 
   e2e-testing:
     name: End to End

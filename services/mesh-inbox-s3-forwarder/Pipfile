@@ -1,0 +1,39 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+mesh-inbox-s3-forwarder = {editable = true, path = "."}
+
+[dev-packages]
+werkzeug = "~=2.1.0"
+moto = {version = "~=2.2", extras = ["server"]}
+pytest-cov = "~=2.12"
+pytest = "~=6.2"
+pyfakefs = "~=4.5"
+fake-mesh = "~=0.3"
+flake8 = "~=3.9"
+flake8-bugbear="~=21.9"
+flake8-comprehensions="~=3.6"
+mccabe="~=0.6"
+flake8-builtins="~=1.5"
+flake8-print="~=4.0"
+bandit = "~=1.7"
+isort = "~=5.9"
+black = "==21.9b0"
+mypy = "~=0.9"
+types-requests = "2.25"
+click = "~=8.0.4"
+
+[requires]
+python_version = "3.9"
+
+[scripts]
+test = "python -m pytest --cov=awsmesh --cov-report=term-missing tests/unit tests/e2e"
+format-import = "isort src/ tests/ setup.py"
+format = "black -t py39 -l100 src/ tests/ setup.py"
+check-format = "black --diff --check -t py39 -l100 src/ tests/ setup.py"
+typecheck = "mypy --ignore-missing-imports src/ tests/"
+lint-flake8 = "flake8 src/ tests/ setup.py"
+lint-bandit = "bandit -r src/"

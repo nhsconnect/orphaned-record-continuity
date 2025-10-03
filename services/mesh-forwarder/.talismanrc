@@ -1,0 +1,6 @@
+fileignoreconfig:
+- filename: Dojofile-python
+  checksum: a1e41215bd1d41956270381492143ce9372ec2224ab422d24b3748ab8cc87bc1
+version: ""
+allowed_patterns:
+- PWD
