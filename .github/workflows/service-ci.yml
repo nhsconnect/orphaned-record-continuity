@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
+      - PRM-495
     paths:
       - 'services/ehr-repo/**'
       - 'services/mesh-forwarder/**'
+      - 'services/ehr-out-service/**'
       - '.github/workflows/service-ci.yml'
 
   pull_request:
@@ -16,9 +18,11 @@ on:
       - reopened
     branches:
       - main
+      - PRM-495
     paths:
       - 'services/ehr-repo/**'
       - 'services/mesh-forwarder/**'
+      - 'services/ehr-out-service/**'
       - '.github/workflows/service-ci.yml'
 
 permissions:
@@ -28,6 +32,7 @@ permissions:
 
 jobs:
   get_changed_files:
+    name: Get change files
     runs-on: ubuntu-latest
     outputs:
       changed: ${{ steps.get_changes.outputs.changed }}
@@ -45,7 +50,9 @@ jobs:
           echo "changed=$changed" >> $GITHUB_OUTPUT
           
   ehr-repo:
+    name: EHR Repo CI
     needs: get_changed_files
+    secrets: inherit
     if: contains(needs.get_changed_files.outputs.changed, 'services/ehr-repo') || contains(needs.get_changed_files.outputs.changed, '.github/')
     uses: './.github/workflows/base-node-service-jobs.yml'
     with:
@@ -53,7 +60,19 @@ jobs:
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
       skip_build_and_publish: ${{ github.ref != 'refs/heads/main' }}
+
+
+  ehr-out-service:
+    name: EHR Out Service CI
+    needs: get_changed_files
+    if: contains(needs.get_changed_files.outputs.changed, 'services/ehr-out-service') || contains(needs.get_changed_files.outputs.changed, '.github/')
     secrets: inherit
+    uses: './.github/workflows/base-node-service-jobs.yml'
+    with:
+      service: ehr-out-service
+      environment: dev
+      is_deployment: ${{ github.ref == 'refs/heads/main' }}
+      skip_build_and_publish: ${{ github.ref != 'refs/heads/main' }}
 
   mesh-inbox-s3-forwarder:
     needs: get_changed_files
