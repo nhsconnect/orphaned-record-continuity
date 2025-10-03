@@ -68,9 +68,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: 3.9
-      - name: Test with pytest
+      - name: Run Unit tests
         run: |
-          ./tasks test_nems_subscriber
+          ./tasks test_unit
 
   build-and-publish-service:
     environment: ${{ inputs.environment }}
@@ -123,7 +123,7 @@ jobs:
             REF_TAG="${REF_NAME//\//-}"
             TAG_ARGS+=(-t "$ECR_URI:$REF_TAG")
           fi
-          docker build "${TAG_ARGS[@]}" --build-arg SOURCE_IMAGE_TAG="$IMAGE_TAG" .
+          docker build "${TAG_ARGS[@]}" --build-arg IMAGE_TAG="$IMAGE_TAG" .
 
         # docker push "$ECR_URI:$IMAGE_TAG"
         # docker push "$ECR_URI:latest"

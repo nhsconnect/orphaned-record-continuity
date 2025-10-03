@@ -393,7 +393,7 @@ case "${command}" in
     get_local_tkw_subscriptions_env
     pushd nems-subscriber && pip3 install -r requirements.txt && python3 -m pytest --capture=no
     ;;
-  test_nems_subscriber)
+  test_unit)
     ./tasks _test_nems_subscriber
     ;;
   _create_nems_subscription)

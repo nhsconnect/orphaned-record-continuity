@@ -1,5 +1,5 @@
-ARG SOURCE_IMAGE_TAG
-FROM registrations/mesh-inbox-s3-forwarder:$SOURCE_IMAGE_TAG
+ARG IMAGE_TAG
+FROM registrations/mesh-inbox-s3-forwarder:$IMAGE_TAG
 
 RUN whoami
 USER root
