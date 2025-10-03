@@ -24,7 +24,7 @@ export const authenticateRequest = (req, res, next) => {
     logWarning(
       `Unsuccessful Request: ${req.method} ${
         req.originalUrl
-      }, API Key: ******${authorizationKey.slice(-3)}`
+      }, Invalid API Key presented`
     );
     res.status(403).json({
       error: `Authorization header is provided but not valid`
