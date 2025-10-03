@@ -6,14 +6,12 @@ ARG IMAGE_TAG
 ENV BUILD_TAG=${IMAGE_TAG}
 
 RUN addgroup --system mesh && adduser --ingroup mesh --system mesh
-
 COPY . /mesh-forwarder
-
+COPY requirements.txt /mesh-forwarder/requirements.txt
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
-
-RUN cd /mesh-forwarder && ls -la
-RUN pip install -r requirements.txt
+RUN pip install --user pipenv
+RUN cd /mesh-forwarder && pipenv install
 
 RUN chown -R mesh:mesh /mesh-forwarder
 
