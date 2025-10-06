@@ -1,0 +1,96 @@
+@startuml
+
+!include https://gist.githubusercontent.com/fishey2/c9d9d7c7426d3701959789c10e96fdb0/raw/2afa46ecf5e126ad563693a8dccfa3e7ee46a50c/nhs_stylesheet.iuml
+
+actor client
+participant "GP2GP Messenger" as gp2gp
+participant "RabbitMQ" as mq
+
+autonumber "<b>[100]"
+group Example Get EHR Record (OPENTEST)
+    activate gp2gp
+        gp2gp o-> mq : Connect (failover)
+            activate mq
+            else Error
+                <-[NHS_ERROR]- gp2gp  : Could not connect
+            else
+
+        mq --> gp2gp : Client created
+
+        gp2gp -> mq : Subscribe to channel
+            else Error
+                <-[NHS_ERROR]- gp2gp: Could not subscribe to channel
+            else
+
+        mq --> gp2gp : Subscribed
+
+        gp2gp -> gp2gp : Add message handler
+
+        client -> gp2gp : /ehr-request
+            note left: {\n\     "nhsNumber": "123456",\n\     "odsCode": "234567" \n\ }
+
+        else has MHS_ERROR occurred
+            gp2gp -[NHS_ERROR]-> client : 503 NOK
+        else
+
+        gp2gp -> gp2gp : getRoutingInfo(odsCode)
+            note left: { \n\     "asid": "aisd-${odsCode}" \n\ }
+
+        gp2gp -> gp2gp : generateEhrRequestQuery(...)
+            note left: Template RCMR_IN010000UK05 \
+            \n\     <id> = uuid, \
+            \n\     <creationTime> = timestamp, \
+            \n\     <communicationFunctionRcv::device::id> = receievingAsid, \
+            \n\     <communicationFunctionRcv::device::id> = sendingAsid, \
+            \n\     <ControlActEvent::author1::AgentSystemSDS::id> = sendingAsid, \
+            \n\     <subject::EhrRequest::recordTarget::patient::id> = nhsNumber \
+            \n\     <subject::author::AgentOrgSDS::id = sendingOdsCode, \
+            \n\     <destination::author::AgentOrgSDS::id = sendingOdsCode
+
+        gp2gp --[NHS_WARM_YELLOW]--> gp2gp : sendMessage(RCMR_IN010000UK05)
+
+        gp2gp -[NHS_WARM_YELLOW]-> mq : sendToQueueOld(RCMR_IN030000UK06)
+            note left: Template RCMR_IN030000UK06 \
+            \n\ Contains EHR Extract
+            activate mq
+
+        mq -[NHS_WARM_YELLOW]-> mq: Message inbound -> outbound
+
+        mq -> gp2gp : RCMR_IN030000UK06 -> Subscriber
+            deactivate mq
+
+        gp2gp -[NHS_WARM_YELLOW]-> gp2gp : sendMessage(COPC_IN000001UK01)
+            note left: Template COPC_IN000001UK01 \
+            \n\ Common Content (Confirm)
+
+        gp2gp -[NHS_WARM_YELLOW]-> mq : Fragment 1 (COPC_MT000001UK01)
+            activate mq
+        gp2gp -[NHS_WARM_YELLOW]-> mq : ...
+
+        gp2gp -[NHS_WARM_YELLOW]-> mq : Fragment N
+
+        gp2gp -[NHS_WARM_YELLOW]-> mq : Acknowledgement (Type: AA::ER)
+
+        mq -[NHS_WARM_YELLOW]-> mq: Messages inbound -> outbound
+
+        mq -> gp2gp : Fragment X
+
+        gp2gp -> gp2gp : messageHandler(fragment)
+            else could not handle message
+            gp2gp -[NHS_ERROR]-> mq : Transaction (Fragment X)
+            else
+
+        gp2gp -> mq : Acknowledgement (Fragment X)
+
+        mq -> gp2gp : Acknowledgement(AA::ER)
+            deactivate mq
+
+        gp2gp -> gp2gp : messageHandler(acknowledgement)
+            else is negative acknowledgement
+                gp2gp -[NHS_ERROR]-> client : 503 NOK
+            else
+
+        gp2gp -> client : 200 OK
+    deactivate gp2gp
+end
+@enduml

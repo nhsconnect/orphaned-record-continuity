@@ -1,0 +1,121 @@
+@startuml
+
+!include https://gist.githubusercontent.com/fishey2/c9d9d7c7426d3701959789c10e96fdb0/raw/2afa46ecf5e126ad563693a8dccfa3e7ee46a50c/nhs_stylesheet.iuml
+
+
+participant "GP2GP Messenger" as gp2gp
+
+box "MHS VPC"
+    participant "Active MQ Inbound" as mq
+    participant "MHS Adapter" as mhs
+end box
+
+box "HSCN | Spine"
+    participant "SDS" as sds
+    participant "Target" as target
+end box
+
+' This demonstrates how the MHS works and how we should interact with it
+autonumber "<b>[300]"
+activate gp2gp
+    group MHS Adapter
+        group MHS Outbound Async Workflow
+            gp2gp -> mhs : POST {MHS Client Endpoint}/
+                note left: Content-Type*: application/json\n\ Interaction-Id*: <Interation-Id>\n\ Sync-Async*: <bool>\n\ Correlation-Id*: <UUID>\n\ Ods-Code: <String (YES)>\n\ Body:\n\ {\n\     "payload": "<Message>", \n\     "attachments": []\n\ }
+                activate mhs
+
+                ' MHS Internal Lookup for the Interaction ID
+                alt
+
+                    mhs -> mhs: Interaction-Id lookup
+                        note left: This will return the fully qualified version of the\n\ interaction Id that is used for the SDS query
+
+                else 404 Interaction Id does not exist
+                    mhs -[NHS_ERROR]-> gp2gp : Unknown interaction ID: <Interation-Id>
+                end
+
+                alt
+                    ' MHS Does an Accredited System lookup to check if the Interaction ID exists for an ODS code
+                    ' If it does it will then proceed to get ASID and Party Key for that system
+
+                    ' In GP2GP Spec it specifies that exactly one ASIS should be returned by this AS Lookup,
+                    ' however in reality this is not the case, however it is the first one that must be used.
+                    mhs -> sds : Accredited System Lookup
+                        activate sds
+                        note left: Query: \n\ objectClass = nhsAs\n\ nhsIdCode=<Ods-Code>\n\ nhsSvcIAId=<Interaction-Namespace>:<Interation-Id>
+
+                    sds -> mhs: Receiving ASID and Party Key
+                        deactivate sds
+
+                else 500 Accredited system lookup failed
+                    mhs -[NHS_ERROR]-> gp2gp: Error obtaining outbound URL
+                else
+
+                    ' For most messages, we assume that the ODS-Code would be spine (YES), however for GP2GP messages
+                    ' we would need to change the Ods-Code, which we can do by providing it in the request headers
+                    mhs -> sds: Message Handling System Lookup
+                        activate sds
+                        note left: Query: \n\ objectClass = nhsMhs\n\ nhsMhsPartyKey=<Party Key>\n\ nhsSvcIAId=<Interaction-Namespace>:<Interation-Id>
+
+                else 500 Could not get Endpoint information
+                    mhs -[NHS_ERROR]-> gp2gp: (likely?) Error obtaining outbound URL
+                else
+
+                    sds -> mhs: Target Endpoint
+                        deactivate sds
+                end
+
+            alt
+                    mhs -> mhs: Wraps the message as a HL7 ebXml message
+
+                    mhs -> target: Sends HL7 request with message payload
+                       activate target
+
+                    target -> mhs: Acknowledgement
+
+            else 500 Unknown server side error has occurred
+                mhs -[NHS_ERROR]-> gp2gp: Unknown error
+            else 202 Success / No Content
+
+                mhs -> gp2gp: No Content
+                    deactivate mhs
+            end
+        end
+
+
+        group MHS Inbound Async Workflow
+            alt
+                target -> mhs: Sends HL7 Response with payload (POST {MHS Spine Endpoint})
+                    activate mhs
+
+            else 500 Could not process
+                ref over sds
+                  Target attempts message POST 3 times
+                end ref
+                mhs -[NHS_ERROR]-> target: Unexpected error
+            else
+
+                mhs -> mhs: Extracts information from SOAP Envelope
+
+                mhs -> target: Acknowledgement
+                    deactivate target
+
+             else Unexpected Error
+                mhs <-[NHS_ERROR]- mhs: Log error, Do nothing
+             else
+
+                mhs -> mq: Puts message and headers on queue
+                    deactivate mhs
+                    activate mq
+
+
+            end
+            mq -> gp2gp: Message Received
+
+            gp2gp -> mq: Consume message
+                deactivate mq
+
+        end
+    end
+deactivate gp2gp
+@enduml
