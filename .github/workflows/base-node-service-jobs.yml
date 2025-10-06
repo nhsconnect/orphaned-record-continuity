@@ -132,14 +132,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Setup Node
-        uses: actions/setup-node@v5
-        with:
-          node-version: 22
-
-      - name: Clean Install
-        run: npm run build
-
       - name: Configure AWS Credentials (Read/Write)
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -152,7 +144,7 @@ jobs:
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: docker build, tag, and publish
+      - name: docker build, tag
         env:
           REF_NAME: ${{ github.ref_name }}
           REGISTRY: ${{ steps.ecr-login.outputs.registry }}
@@ -165,8 +157,8 @@ jobs:
             REF_TAG="${REF_NAME//\//-}"
             TAG_ARGS+=(-t "$REGISTRY/$REPOSITORY:$REF_TAG")
           fi
-
           docker build "${TAG_ARGS[@]}" --build-arg BUILD_TAG="$IMAGE_TAG" .
+
       - name: docker publish
         if: ${{ inputs.is_deployment }}
         env:
@@ -175,6 +167,12 @@ jobs:
           REPOSITORY: deductions/${{ inputs.service }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
+          set -euo pipefail
+          TAG_ARGS=(-t "$REGISTRY/$REPOSITORY:$IMAGE_TAG" -t "$REGISTRY/$REPOSITORY:latest")
+          if [ -n "${REF_NAME:-}" ]; then
+            REF_TAG="${REF_NAME//\//-}"
+            TAG_ARGS+=(-t "$REGISTRY/$REPOSITORY:$REF_TAG")
+          fi
           docker push "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
           docker push "$REGISTRY/$REPOSITORY:latest"
 
