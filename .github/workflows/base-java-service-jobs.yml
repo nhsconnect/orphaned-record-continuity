@@ -69,8 +69,19 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
-      - name: Run Unit Tests
+      - name: Run All Tests
         run: ./tasks test_all
+        env:
+          S3_BUCKET_NAME: test-bucket
+          LOCALSTACK_URL: http://localhost:4566
+          DYNAMODB_NAME: local-test-db
+          DYNAMODB_LOCAL_ENDPOINT: http://localhost:4566
+          AWS_ACCESS_KEY_ID: LSIA5678901234567890
+          AWS_SECRET_ACCESS_KEY: LSIA5678901234567890
+          SERVICE_URL: http://localhost:3000
+          NHS_ENVIRONMENT: local
+          EHR_URL: http://localhost:3000
+          AUTHORIZATION_KEYS: auth-key-1
 
     #   - name: Build Code
     #     run: ./gradlew build
