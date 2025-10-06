@@ -9,6 +9,7 @@ on:
       - 'services/ehr-repo/**'
       - 'services/mesh-forwarder/**'
       - 'services/ehr-out-service/**'
+      - 'services/ehr-transfer-service/**'
       - '.github/workflows/service-ci.yml'
 
   pull_request:
@@ -23,6 +24,7 @@ on:
       - 'services/ehr-repo/**'
       - 'services/mesh-forwarder/**'
       - 'services/ehr-out-service/**'
+      - 'service/ehr-transfer-service/**'
       - '.github/workflows/service-ci.yml'
 
 permissions:
@@ -99,6 +101,16 @@ jobs:
     uses: './.github/workflows/base-node-service-jobs.yml'
     with:
       service: gp2gp-messenger
+      environment: dev
+      is_deployment: ${{ github.ref == 'refs/heads/main' }}
+    secrets: inherit
+
+  ehr-transfer-service:
+    needs: [ get_changed_files]
+    if: contains(needs.get_changed_files.outputs.changed, 'services/ehr-transfer-service') || contains(needs.get_changed_files.outputs.changed, '.github/')
+    uses: './.github/workflows/base-java-service-jobs.yml'
+    with:
+      service: ehr-transfer-service
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
     secrets: inherit
