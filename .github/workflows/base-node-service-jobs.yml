@@ -132,6 +132,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install
       - name: Configure AWS Credentials (Read/Write)
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -144,6 +150,9 @@ jobs:
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: NPM Build
+        run: npm run build  
+        
       - name: docker build, tag
         env:
           REF_NAME: ${{ github.ref_name }}
