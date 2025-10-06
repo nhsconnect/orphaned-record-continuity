@@ -21,6 +21,8 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
 import org.springframework.jms.config.JmsListenerContainerFactory;
+import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -49,7 +51,9 @@ import static javax.jms.Session.CLIENT_ACKNOWLEDGE;
 import static uk.nhs.prm.repo.ehrtransferservice.database.enumeration.TransferTableAttribute.*;
 
 @TestConfiguration
+@Profile("localstack")        // <— opt-in only
 public class LocalStackAwsConfig {
+    @Autowired Environment env;
 
     @Autowired
     private S3Client s3Client;
@@ -123,7 +127,7 @@ public class LocalStackAwsConfig {
     private static final long DYNAMO_WRITE_CAPACITY_UNITS = 5L;
 
     @Bean
-    public static SqsClient sqsClient(@Value("${localstack.url}") String localstackUrl) throws URISyntaxException {
+    public static SqsClient sqsClient(@Value("${localstack.url:http://localhost:4566}") String localstackUrl) throws URISyntaxException {
         return SqsClient.builder()
                 .credentialsProvider((()-> AwsBasicCredentials.create("FAKE", "FAKE")))
                 .endpointOverride(new URI(localstackUrl))
@@ -151,7 +155,7 @@ public class LocalStackAwsConfig {
     }
 
     @Bean
-    public AmazonS3 amazonS3(@Value("${localstack.url}") String localstackUrl) {
+    public AmazonS3 amazonS3(@Value("${localstack.url:http://localhost:4566}") String localstackUrl) {
         return AmazonS3ClientBuilder.standard()
                 .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("FAKE", "FAKE")))
                 .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(localstackUrl, "eu-west-2"))
@@ -163,10 +167,10 @@ public class LocalStackAwsConfig {
     // Therefore: find a way to create the bucket - setting GrantFullControl using
     // the class above, then get rid of this S3Client / v2.
     @Bean
-    public static S3Client s3Client(@Value("${localstack.url}") String localstackUrl) {
+    public static S3Client s3Client(@Value("${localstack.url:http://localhost:4566}") String localstackUrl) {
         return S3Client.builder()
                 .endpointOverride(URI.create(localstackUrl))
-                .forcePathStyle(true)
+                .pathStyleAccessEnabled(true) // <— v2 way
                 .region(Region.EU_WEST_2)
                 .credentialsProvider(StaticCredentialsProvider.create(new AwsCredentials() {
                     @Override
@@ -187,7 +191,7 @@ public class LocalStackAwsConfig {
     }
 
     @Bean
-    public static AmazonSQSAsync amazonSQSAsync(@Value("${localstack.url}") String localstackUrl) {
+    public static AmazonSQSAsync amazonSQSAsync(@Value("${localstack.url:http://localhost:4566}") String localstackUrl) {
         return AmazonSQSAsyncClientBuilder.standard()
                 .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("FAKE", "FAKE")))
                 .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(localstackUrl, "eu-west-2"))
@@ -200,7 +204,7 @@ public class LocalStackAwsConfig {
     }
 
     @Bean
-    public static AmazonSNS amazonSNS(@Value("${localstack.url}") String localstackUrl) {
+    public static AmazonSNS amazonSNS(@Value("${localstack.url:http://localhost:4566}") String localstackUrl) {
         return AmazonSNSClientBuilder.standard()
                 .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("FAKE", "FAKE")))
                 .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(localstackUrl, "eu-west-2"))
@@ -213,7 +217,7 @@ public class LocalStackAwsConfig {
     }
 
     @Bean
-    public static SnsClient snsClient(@Value("${localstack.url}") String localstackUrl) {
+    public static SnsClient snsClient(@Value("${localstack.url:http://localhost:4566}") String localstackUrl) {
         return SnsClient.builder()
                 .endpointOverride(URI.create(localstackUrl))
                 .region(Region.EU_WEST_2)
@@ -232,7 +236,7 @@ public class LocalStackAwsConfig {
     }
 
     @Bean
-    public static DynamoDbClient dynamoDbClient(@Value("${localstack.url}") String localstackUrl) {
+    public static DynamoDbClient dynamoDbClient(@Value("${localstack.url:http://localhost:4566}") String localstackUrl) {
         return DynamoDbClient.builder()
                 .endpointOverride(URI.create(localstackUrl))
                 .region(Region.EU_WEST_2)
@@ -253,6 +257,7 @@ public class LocalStackAwsConfig {
 
     @PostConstruct
     public void setupTestQueuesAndTopics() {
+        if (!Arrays.asList(env.getActiveProfiles()).contains("localstack")) return;
         setupS3Bucket();
         setUpQueueAndTopics();
         createDynamoTable();
