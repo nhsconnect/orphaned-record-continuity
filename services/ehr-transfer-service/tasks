@@ -197,14 +197,14 @@ case "${command}" in
       ;;
   _build)
       rm -rf build/
-      gradle build
+      ./gradlew build
       ;;
   build)
       ./tasks _build
       ;;
   _assemble)
       rm -rf build/
-      gradle assemble
+      ./gradlew assemble
       ;;
   assemble)
       ./tasks _assemble
@@ -217,7 +217,7 @@ case "${command}" in
       ./tasks _test_unit
       ;;
   _test_integration)
-      gradle --info integration
+      ./gradlew --info integration
       ;;
   test_integration)
       ensure_prev_build_images_are_stopped
@@ -229,7 +229,7 @@ case "${command}" in
       dojo -c Dojofile-itest
       ;;
   _test_coverage)
-      gradle jacocoTestCoverageVerification
+      ./gradlew jacocoTestCoverageVerification
       ;;
   test_coverage)
       ensure_prev_build_images_are_stopped
@@ -240,7 +240,7 @@ case "${command}" in
       fetch_redaction_utils
       ;;
   _code_quality)
-      gradle check -x test -x integration
+      ./gradlew check -x test -x integration
       ;;
   code_quality)
       ensure_prev_build_images_are_stopped

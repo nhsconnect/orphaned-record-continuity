@@ -9,7 +9,6 @@ plugins {
 
 group = 'uk.nhs.prm.repo'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '21'
 
 configurations {
     compileOnly {
@@ -22,6 +21,12 @@ repositories {
     mavenCentral()
 }
 
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
 //Without this task two jars are built, the additional "-plain.jar" is not needed
 // for more details refer to: https://docs.spring.io/spring-boot/docs/current/gradle-plugin/reference/htmlsingle/#packaging-executable.and-plain-archives
 jar {
@@ -30,7 +35,9 @@ jar {
 
 configurations {
     integrationImplementation.extendsFrom testImplementation
-    integrationRuntime.extendsFrom testRuntime
+    integrationRuntime.extendsFrom     integrationImplementation.extendsFrom testImplementation
+    // was: integrationRuntime.extendsFrom testRuntime
+    integrationRuntime.extendsFrom testRuntimeClasspath
 }
 
 dependencies {
