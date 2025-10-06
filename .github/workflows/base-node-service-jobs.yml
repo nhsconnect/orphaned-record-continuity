@@ -24,10 +24,6 @@ on:
         default: false
         description: Whether to deploy of not
         required: true
-      skip_build_and_publish:
-        type: boolean
-        default: true
-        description: Whether to skip build_and_publish step
 
   workflow_call:
     inputs:
@@ -39,10 +35,6 @@ on:
         type: string
         required: true
       is_deployment:
-        type: boolean
-        default: false
-        required: true
-      skip_build_and_publish:
         type: boolean
         default: false
         required: true
@@ -129,7 +121,6 @@ jobs:
 
 
   build_and_publish:
-    if: ${{ !inputs.skip_build_and_publish && inputs.is_deployment }}
     name: Build & Publish
     needs: [run_tests]
     runs-on: ubuntu-latest
@@ -176,7 +167,14 @@ jobs:
           fi
 
           docker build "${TAG_ARGS[@]}" --build-arg BUILD_TAG="$IMAGE_TAG" .
-
+      - name: docker publish
+        if: ${{ inputs.is_deployment }}
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          REPOSITORY: deductions/${{ inputs.service }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
           docker push "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
           docker push "$REGISTRY/$REPOSITORY:latest"
 

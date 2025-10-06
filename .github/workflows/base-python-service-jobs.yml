@@ -23,10 +23,6 @@ on:
         default: false
         description: Whether to deploy of not
         required: true
-      skip_build_and_publish:
-        type: boolean
-        default: true
-        description: Whether to skip build_and_publish step
 
   workflow_call:
     inputs:
@@ -44,10 +40,6 @@ on:
       deploy_infra:
         type: boolean
         default: true
-      skip_build_and_publish:
-        type: boolean
-        default: false
-        required: true
 
 permissions:
   pull-requests: write

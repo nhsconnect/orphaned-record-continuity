@@ -59,7 +59,6 @@ jobs:
       service: ehr-repo
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
-      skip_build_and_publish: ${{ github.ref != 'refs/heads/main' }}
 
 
   ehr-out-service:
@@ -72,7 +71,6 @@ jobs:
       service: ehr-out-service
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
-      skip_build_and_publish: ${{ github.ref != 'refs/heads/main' }}
 
   mesh-inbox-s3-forwarder:
     needs: get_changed_files
@@ -82,7 +80,6 @@ jobs:
       service: mesh-inbox-s3-forwarder
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
-      skip_build_and_publish: ${{ github.ref != 'refs/heads/main' }}
       deploy_infra: false
     secrets: inherit
 
@@ -94,7 +91,6 @@ jobs:
       service: mesh-forwarder
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
-      skip_build_and_publish: ${{ github.ref != 'refs/heads/main' }}
     secrets: inherit
 
   gp2gp-messenger:
@@ -105,7 +101,6 @@ jobs:
       service: gp2gp-messenger
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
-      skip_build_and_publish: ${{ github.ref != 'refs/heads/main' }}
     secrets: inherit
 
   e2e-testing:

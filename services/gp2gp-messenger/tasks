@@ -94,7 +94,7 @@ function set_image_tag() {
 }
 
 function get_aws_account_id {
-    AWS_ACCOUNT_ID=$(dojo -c Dojofile-infra "aws sts get-caller-identity | jq -r .Account")
+    AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account")
 }
 
 function configure_aws_service_e2e_test_auth_keys_for_gp2gp_messenger {
@@ -194,7 +194,7 @@ function generate_authorization_keys {
 
 function docker_login {
   echo Logging in to Amazon ECR...
-  eval $(dojo -c Dojofile-infra "aws ecr get-login --no-include-email --region $AWS_DEFAULT_REGION")
+  eval $(aws ecr get-login --no-include-email --region $AWS_DEFAULT_REGION")
 }
 
 function configure_docker_repository_uri {
@@ -222,24 +222,24 @@ case "${command}" in
       npm run check-audit
       ;;
   dep)
-      dojo "./tasks _dep"
+      ./tasks _dep
       ;;
   _fix_dep)
       npm install
       npm run resolve-audit
       ;;
   fix_dep)
-      dojo "./tasks _fix_dep"
+      ./tasks _fix_dep
       ;;
   _list_outdated)
       npm install
       npm outdated > outdated-dependencies.txt
       ;;
   list_outdated)
-      dojo "./tasks _list_outdated"
+      ./tasks _list_outdated
       ;;
   update_package_json)
-      dojo "npx npm-check-updates -u"
+      npx npm-check-updates -u
       ;;
   _build)
       rm -rf build/
@@ -247,21 +247,21 @@ case "${command}" in
       npm run build
       ;;
   build)
-      dojo "./tasks _build"
+      ./tasks _build
       ;;
   _test_lint)
       npm install
       npm run lint
       ;;
   test_lint)
-      dojo "./tasks _test_lint"
+      ./tasks _test_lint
       ;;
   _test_unit)
       npm install
       npm run test:unit
       ;;
   test_unit)
-      dojo "./tasks _test_unit"
+      ./tasks _test_unit
       ;;
   _test_integration)
       npm install
@@ -269,14 +269,14 @@ case "${command}" in
       ;;
   test_integration)
       configure_local_envs
-      dojo -c Dojofile-itest "./tasks _test_integration"
+      ./tasks _test_integration
       ;;
   test_integration_shell)
       configure_local_envs
       dojo -c Dojofile-itest
       ;;
   sanity_check)
-      dojo "./tasks _sanity_check"
+      ./tasks _sanity_check
       ;;
   _sanity_check)
       configure_domain_infix
@@ -297,7 +297,7 @@ case "${command}" in
       _assume_environment_role $NHS_ENVIRONMENT
       configure_aws_service_e2e_test_auth_keys_for_gp2gp_messenger
       configure_service_url
-      dojo "./tasks _test_functional"
+      ./tasks _test_functional
       ;;
   _test_e2e)
       npm install
@@ -308,7 +308,7 @@ case "${command}" in
       _assume_environment_role $NHS_ENVIRONMENT
       configure_aws_service_e2e_test_auth_keys_for_gp2gp_messenger
       configure_service_url
-      dojo "./tasks _test_e2e"
+      ./tasks _test_e2e
       ;;
   _test_coverage)
       npm install
@@ -316,7 +316,7 @@ case "${command}" in
       ;;
   test_coverage)
       configure_local_envs
-      dojo -c Dojofile-itest "./tasks _test_coverage"
+      ./tasks _test_coverage
       ;;
   fetch_utils)
       fetch_redaction_utils
@@ -341,18 +341,18 @@ case "${command}" in
       configure_docker_repository_uri
       set_image_tag
       configure_service_url
-      dojo -c Dojofile-dtest "./tasks _test_docker"
+      ./tasks _test_docker
       ;;
   test_docker_local)
       configure_local_envs
       set_image_tag
-      dojo -c Dojofile-dtest "./tasks _test_docker"
+      ./tasks _test_docker
       ;;
   _generate_authorization_keys)
       generate_authorization_keys
       ;;
   generate_authorization_keys)
-      dojo -c Dojofile-infra "./tasks _generate_authorization_keys"
+      ./tasks _generate_authorization_keys
       ;;
   _tf)
       check_env
@@ -360,7 +360,7 @@ case "${command}" in
       bash
       ;;
   tf)
-      dojo -c Dojofile-infra "./tasks _tf"
+      ./tasks _tf
       ;;
   _tf_plan_certs)
       _assume_environment_role $NHS_ENVIRONMENT
@@ -368,7 +368,7 @@ case "${command}" in
       ;;
   tf_plan_certs)
       check_env
-      dojo -c Dojofile-infra "./tasks _tf_plan_certs $2"
+      ./tasks _tf_plan_certs $2
       ;;
   _tf_apply_certs)
       _assume_environment_role $NHS_ENVIRONMENT
@@ -376,7 +376,7 @@ case "${command}" in
       ;;
   tf_apply_certs)
       check_env
-      dojo -c Dojofile-infra "./tasks _tf_apply_certs"
+      ./tasks _tf_apply_certs
       ;;
   _tf_plan)
       _assume_environment_role $NHS_ENVIRONMENT
@@ -384,7 +384,7 @@ case "${command}" in
       ;;
   tf_plan)
       check_env
-      dojo -c Dojofile-infra "./tasks _tf_plan $2"
+      ./tasks _tf_plan $2
       ;;
   _tf_apply)
       _assume_environment_role $NHS_ENVIRONMENT
@@ -392,7 +392,7 @@ case "${command}" in
       ;;
   tf_apply)
       check_env
-      dojo -c Dojofile-infra "./tasks _tf_apply"
+      ./tasks _tf_apply
       ;;
   promote_docker_image)
       check_env
@@ -408,7 +408,7 @@ case "${command}" in
       ;;
   wait_ecs)
       check_env
-      dojo -c Dojofile-infra "./tasks _wait_ecs"
+      ./tasks _wait_ecs
       ;;
   *)
       echo "Invalid command: '${command}'"
