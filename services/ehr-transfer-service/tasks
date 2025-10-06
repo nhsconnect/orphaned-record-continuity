@@ -239,7 +239,7 @@ case "${command}" in
       ./tasks _code_quality
       ;;
   _test_all)
-      gradle test integration jacocoTestCoverageVerification check
+      ./gradlew test integration jacocoTestCoverageVerification check
       ;;
   test_all)
       configure_local_envs
