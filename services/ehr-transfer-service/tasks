@@ -76,7 +76,17 @@ function configure_local_envs {
   export EHR_TRANSFER_SERVICE_MHS_QUEUE_USERNAME=admin
   export EHR_TRANSFER_SERVICE_MHS_QUEUE_PASSWORD=admin
   export LOCALSTACK_URL="http://localstack:4566"
-  export AWS_REGION=${AWS_DEFAULT_REGION}
+  export AWS_REGION="eu-west-2"
+  export AWS_DEFAULT_REGION=="eu-west-2"
+  export S3_BUCKET_NAME="test-bucket"
+  export LOCALSTACK_URL="http://localhost:4566"
+  export DYNAMODB_NAME="local-test-db"
+  export DYNAMODB_LOCAL_ENDPOINT="http://localhost:4566"
+  export AWS_ACCESS_KEY_ID=" LSIA5678901234567890"
+  export AWS_SECRET_ACCESS_KEY="LSIA5678901234567890"
+  export SERVICE_URL=" http://localhost:3000"
+  export NHS_ENVIRONMENT="local"
+  export AUTHORIZATION_KEYS="auth-key-1"
 }
 
 function configure_sonar_environment_variable {
