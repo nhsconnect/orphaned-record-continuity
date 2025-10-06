@@ -170,7 +170,6 @@ public class LocalStackAwsConfig {
     public static S3Client s3Client(@Value("${localstack.url:http://localhost:4566}") String localstackUrl) {
         return S3Client.builder()
                 .endpointOverride(URI.create(localstackUrl))
-                .pathStyleAccessEnabled(true)
                 .region(Region.EU_WEST_2)
                 .credentialsProvider(StaticCredentialsProvider.create(new AwsCredentials() {
                     @Override
@@ -183,6 +182,10 @@ public class LocalStackAwsConfig {
                         return "FAKE";
                     }
                 }))
+                .serviceConfiguration(
+                S3Configuration.builder()
+                .pathStyleAccessEnabled(true)
+                .build())
                 .build();
     }
 
