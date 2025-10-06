@@ -1,0 +1,12 @@
+version: '3.7'
+services:
+  mq-1:
+    image: rmohr/activemq:5.15.9-alpine
+    ports:
+      - 61620:61613
+      - 8161:8161
+  mq-2:
+    image: rmohr/activemq:5.15.9-alpine
+    ports:
+      - 61621:61613
+      - 8162:8161

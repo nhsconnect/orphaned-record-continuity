@@ -1,0 +1,74 @@
+@startuml
+
+!include https://gist.githubusercontent.com/fishey2/c9d9d7c7426d3701959789c10e96fdb0/raw/2afa46ecf5e126ad563693a8dccfa3e7ee46a50c/nhs_stylesheet.iuml
+
+participant "GP2GP Messenger" as gp2gp
+participant "Inbound MQ" as mq
+participant "MHS Adapter" as mhs
+participant "PDS"
+
+
+' Updating Patient Demographic Information in PDS
+' This is required to initiate GP2GP request successfully
+
+' PDS Information is in MIM 4.2.00
+autonumber "<b>[200]"
+activate gp2gp
+    group Update Patient
+
+        note over gp2gp
+            Sending System
+                ASID: 200000001161
+                ODS: B86041
+                PDS ID: From Retrieve Request
+                PDS Serial Change Number: From Retrieve Request + 1
+        end note
+
+        note over PDS
+            Receiving System (PDS)
+                ASID: 928942012545
+        end note
+
+        gp2gp -> mhs : PDS General Update (PRPA_IN000203UK03)
+            note left
+                To update ODS Code:
+                * Receiving ASID
+                * Sending ASID
+                * NHS Number
+                * New ODS Code
+                * PDS ID
+                * PDS Serial Change Number
+            end note
+            activate mhs
+
+            mhs -> PDS : Wrapped PRPA_IN000203UK03
+                activate PDS
+
+        else When incorrect information is provided to update patient
+            PDS -[NHS_ERROR]-> mhs : Wrapped MCCI_IN010000UK13
+
+            mhs -[NHS_ERROR]-> mq : Negative Acknowledgement (MCCI_IN010000UK13)
+                activate mq
+
+            mq -> gp2gp : Consume Message (MCCI_IN010000UK13)
+                note left
+                    Example Reasons:
+                    * Duplicate HL7 ID Error
+                        - When: Message ID Matches Previously Sent Message
+                    * Update Failed - Serial Change Number does not match
+                end note
+        else 202
+            PDS -> mhs : Wrapped PRPA_MT180101UK12
+                deactivate PDS
+
+        mhs -> mq : PDS Update Response(PRPA_MT180101UK12)
+            note left: The ODS in the response should\n\ be the new GP Practise ODS Code
+            deactivate mhs
+
+        mq -> gp2gp : Consume Message (PRPA_MT180101UK12)
+
+
+    end
+deactivate gp2gp
+
+@enduml

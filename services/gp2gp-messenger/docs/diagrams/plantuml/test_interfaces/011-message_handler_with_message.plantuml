@@ -1,0 +1,64 @@
+@startuml
+
+!include https://gist.githubusercontent.com/fishey2/c9d9d7c7426d3701959789c10e96fdb0/raw/2afa46ecf5e126ad563693a8dccfa3e7ee46a50c/nhs_stylesheet.iuml
+
+participant "GP2GP" as gp2gp
+participant "EHR Repository" as ehr
+database "EHR AWS S3" as ehrs3
+
+
+autonumber "<b>[200]"
+group GP2GP message Handler
+
+    -> gp2gp : message
+        activate gp2gp
+
+    gp2gp -> gp2gp : Extract Information (see left)
+        note left: Information \
+        \n\     uuid: converationId \
+        \n\     uuid: messageId \
+        \n\     string: action \
+        \n\     bool: isNegativeAcknowledgement
+
+    else isNegativeAcknowledgement
+        <-[NHS_ERROR]- gp2gp : Negative Acknowledgement
+    else
+
+    gp2gp -> ehr : POST /health-record/${conversationId}/message
+        activate ehr
+
+    else 503 Can't connect to EHR Repository
+        ehr -[NHS_ERROR]-> gp2gp : 503 NOK with error message
+        <-[NHS_ERROR]- gp2gp: Failed to get pre-signed URL
+    else
+
+    ehr -> gp2gp : presignedURL (s3.putObject)
+        deactivate ehr
+
+    gp2gp -> ehrs3 : PUT message fragment to pre-signed URL
+        activate ehrs3
+
+    else 503 Could not connect
+        ehrs3 -[NHS_ERROR]-> gp2gp : S3 Error - Could not upload
+        <-[NHS_ERROR]- gp2gp : Failed to store message to s3 via pre-signed url
+    else
+
+    ehrs3 -> gp2gp : 200 OK
+        deactivate ehrs3
+
+        gp2gp -> ehr : PATCH /health-record/${conversationId}/message/${messageId}
+            note left: Completes the record in EHR Database
+            activate ehr
+
+        else 503 Can't connect to EHR Repository
+            ehr -[NHS_ERROR]-> gp2gp : 503 NOK with error message
+            <-[NHS_ERROR]- gp2gp: Failed to update transfer complete to ehr repo api
+        else
+
+        ehr -> gp2gp : 200 OK
+            deactivate ehr
+
+    <- gp2gp : return
+    deactivate gp2gp
+end
+@enduml

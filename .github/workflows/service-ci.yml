@@ -97,6 +97,17 @@ jobs:
       skip_build_and_publish: ${{ github.ref != 'refs/heads/main' }}
     secrets: inherit
 
+  gp2gp-messenger:
+    needs: [ get_changed_files]
+    if: contains(needs.get_changed_files.outputs.changed, 'services/gp2gp-messenger') || contains(needs.get_changed_files.outputs.changed, '.github/')
+    uses: './.github/workflows/base-python-service-jobs.yml'
+    with:
+      service: gp2gp-messenger
+      environment: dev
+      is_deployment: ${{ github.ref == 'refs/heads/main' }}
+      skip_build_and_publish: ${{ github.ref != 'refs/heads/main' }}
+    secrets: inherit
+
   e2e-testing:
     name: End to End
     if: ${{ vars.E2E_TESTS_ENABLED == 'true' && success() }}

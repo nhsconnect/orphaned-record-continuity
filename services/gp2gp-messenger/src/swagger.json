@@ -1,0 +1,642 @@
+
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "Service to handle message generation for GP2GP communication",
+    "version": "1.0.0",
+    "title": "GP2GP Messenger"
+  },
+  "tags": [
+    {
+      "name": "health",
+      "description": "Health Check"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["health"],
+        "summary": "Checks system and dependency health",
+        "responses": {
+          "200": {
+            "description": "Health Check Ok",
+            "schema": {
+              "$ref": "#/definitions/PDSResponse"
+            }
+          },
+          "500": {
+            "description": "Unknown server-side error has occured",
+            "schema": {
+              "$ref": "#/definitions/ServerError"
+            }
+          },
+          "503": {
+            "description": "One or more dependencies are not OK"
+          },
+          "default": {
+            "description": "200 and 503 response follow default schema",
+            "schema": {
+              "$ref": "#/definitions/HealthResponseTemplate"
+            }
+          }
+        }
+      }
+    },
+    "/health-record-requests/{nhsNumber}": {
+      "post": {
+        "tags": ["health-record-requests"],
+        "summary": "Sends request for EHR",
+        "consumes": ["application/json"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "nhsNumber",
+            "description": "NHS Number (must be 10 digits)",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "patient details",
+            "description": "Data about the patient whose EHR is being requested",
+            "schema": {
+              "$ref": "#/definitions/HealthRecordRequest"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successfully requested"
+          },
+          "401": {
+            "description": "Authorization header missing"
+          },
+          "403": {
+            "description": "Authorization key invalid"
+          },
+          "422": {
+            "description": "Validation failed",
+            "schema": {
+              "$ref": "#/definitions/ValidationErrors"
+            }
+          },
+          "503": {
+            "description": "Downstream error when sending EHR request",
+            "schema": {
+              "$ref": "#/definitions/ServerError"
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/health-record-requests/{nhsNumber}/acknowledgement": {
+      "post": {
+        "tags": ["health-record-requests"],
+        "summary": "Sends EHR acknowledgement",
+        "consumes": ["application/json"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "nhsNumber",
+            "description": "NHS Number (must be 10 digits)",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "conversationId",
+            "schema": {
+              "$ref": "#/definitions/Acknowledgement"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully acknowledged"
+          },
+          "401": {
+            "description": "Authorization header missing"
+          },
+          "403": {
+            "description": "Authorization key invalid"
+          },
+          "422": {
+            "description": "Validation failed",
+            "schema": {
+              "$ref": "#/definitions/ValidationErrors"
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/health-record-requests/continue-message": {
+      "post": {
+        "tags": ["health-record-requests"],
+        "summary": "Sends continue messages for large health record's parts",
+        "consumes": ["application/json"],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Request Body",
+            "schema": {
+              "$ref": "#/definitions/Continue"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully acknowledged"
+          },
+          "401": {
+            "description": "Authorization header missing"
+          },
+          "403": {
+            "description": "Authorization key invalid"
+          },
+          "422": {
+            "description": "Validation failed",
+            "schema": {
+              "$ref": "#/definitions/ValidationErrors"
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/ehr-out-transfers/core": {
+      "post": {
+        "tags": ["ehr-out-transfers"],
+        "summary": "Sends EHR core from Repository to MHS",
+        "consumes": ["application/json"],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "EHR core details",
+            "schema": {
+              "$ref": "#/definitions/EhrOutTransferCore"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Message sent OK"
+          },
+          "401": {
+            "description": "Authorization header missing"
+          },
+          "403": {
+            "description": "Authorization key invalid"
+          },
+          "422": {
+            "description": "Validation failed",
+            "schema": {
+              "$ref": "#/definitions/ValidationErrors"
+            }
+          },
+          "503": {
+            "description": "Downstream error when sending message",
+            "schema": {
+              "$ref": "#/definitions/ServerError"
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/patient-demographics/{nhsNumber}": {
+      "get": {
+        "tags": ["patient-demographics"],
+        "summary": "Uses NHS number to make a PDS patient look-up request through MHS",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "nhsNumber",
+            "description": "NHS Number (must be 10 digits)",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful retrieval",
+            "schema": {
+              "$ref": "#/definitions/PDSResponseBody"
+            }
+          },
+          "401": {
+            "description": "Authorization header missing"
+          },
+          "403": {
+            "description": "Authorization key invalid"
+          },
+          "422": {
+            "description": "Validation failed"
+          },
+          "503": {
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": ["patient-demographics"],
+        "summary": "Updates ODS code in PDS to Deductions Repo ODS code",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "nhsNumber",
+            "description": "NHS Number (must be 10 digits)",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "Update Parameters",
+            "description": "The parameters required to update PD",
+            "schema": {
+              "$ref": "#/definitions/PDSUpdate"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No content - successfully updated PDS"
+          },
+          "401": {
+            "description": "Authorization header missing"
+          },
+          "403": {
+            "description": "Authorization key invalid"
+          },
+          "422": {
+            "description": "Validation failed"
+          },
+          "503": {
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/error": {
+      "get": {
+        "tags": ["health"],
+        "summary": "Generate error log",
+        "responses": {
+          "201": {
+            "description": "Successfully create error log"
+          }
+        }
+      }
+    },
+    "/ehr-out-transfers/fragment": {
+      "post": {
+        "tags": ["ehr-out-transfers"],
+        "summary": "Sends EHR fragment from Repository to MHS",
+        "consumes": ["application/json"],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "EHR fragment details",
+            "schema": {
+              "$ref": "#/definitions/EhrOutTransferFragment"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Message sent OK"
+          },
+          "401": {
+            "description": "Authorization header missing"
+          },
+          "403": {
+            "description": "Authorization key invalid"
+          },
+          "422": {
+            "description": "Validation failed",
+            "schema": {
+              "$ref": "#/definitions/ValidationErrors"
+            }
+          },
+          "503": {
+            "description": "Downstream error when sending message",
+            "schema": {
+              "$ref": "#/definitions/ServerError"
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    }
+  },
+  "securityDefinitions": {
+    "api_key": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header"
+    }
+  },
+  "definitions": {
+    "HealthRecordRequest": {
+      "type": "object",
+      "description": "Sends health record request to MHS",
+      "properties": {
+        "repositoryOdsCode": {
+          "type": "string"
+        },
+        "repositoryAsid": {
+          "type": "string"
+        },
+        "practiceOdsCode": {
+          "type": "string"
+        },
+        "conversationId": {
+          "type": "string"
+        }
+      }
+    },
+    "EhrOutTransferCore": {
+      "type": "object",
+      "description": "Sends core health record message to MHS",
+      "properties": {
+        "conversationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "odsCode": {
+          "type": "string"
+        },
+        "ehrRequestId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "coreEhr": {
+          "type": "object"
+        }
+      }
+    },
+    "EhrOutTransferFragment": {
+      "type": "object",
+      "description": "Sends fragment health record message to MHS",
+      "properties": {
+        "conversationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "odsCode": {
+          "type": "string"
+        },
+        "messageId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "fragmentMessage": {
+          "type": "object"
+        }
+      }
+    },
+    "PDSResponseBody": {
+      "type": "object",
+      "description": "Extracted SOAP response",
+      "properties": {
+        "conversationId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "serialChangeNumber": {
+              "type": "string"
+            },
+            "patientPdsId": {
+              "type": "string"
+            },
+            "odsCode": {
+              "type": "string"
+            }
+          }
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "Acknowledgement": {
+      "type": "string",
+      "description": "Sends EHR acknowledgement",
+      "properties": {
+        "conversationId": {
+          "type": "string",
+          "description": "Conversation ID of EHR out transfer"
+        },
+        "messageId": {
+          "type": "string",
+          "description": "The ID of the EHR core extract message being acknowledged"
+        },
+        "odsCode": {
+          "type": "string",
+          "description": "The ODS code of the entity the EHR has been received from"
+        },
+        "repositoryAsid": {
+          "type": "string",
+          "description": "The ASID code of the Repository instance that has received the EHR"
+        }
+      }
+    },
+    "Continue": {
+      "type": "string",
+      "description": "Sends Continue Message",
+      "properties": {
+        "conversationId": {
+          "type": "string"
+        },
+        "gpOdsCode": {
+          "type": "string"
+        },
+        "ehrExtractMessageId": {
+          "type": "string"
+        }
+      }
+    },
+    "PDSResponse": {
+      "type": "string",
+      "description": "Raw SOAP response"
+    },
+    "PDSUpdate": {
+      "type": "object",
+      "properties": {
+        "pdsId": {
+          "type": "string"
+        },
+        "serialChangeNumber": {
+          "type": "string"
+        },
+        "newOdsCode": {
+          "type": "string"
+        },
+        "conversationId": {
+          "type": "string"
+        }
+      },
+      "required": ["pdsId", "serialChangeNumber", "conversationId"]
+    },
+    "ValidationErrors": {
+      "type": "object",
+      "properties": {
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "description": "An object with the name of the field in error as the key and the error message as the value",
+            "properties": {
+              "nhsNumber": {
+                "type": "string",
+                "description": "Error message for the provided NHS number"
+              }
+            }
+          }
+        }
+      }
+    },
+    "ServerError": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string"
+        }
+      }
+    },
+    "HealthResponseTemplate": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "node_env": {
+          "type": "string"
+        },
+        "details": {
+          "type": "object",
+          "properties": {
+            "filestore": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string"
+                },
+                "bucketName": {
+                  "type": "string"
+                },
+                "available": {
+                  "type": "boolean"
+                },
+                "writable": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "type": "string"
+                }
+              }
+            },
+            "mhs": {
+              "type": "object",
+              "properties": {
+                "options": {
+                  "type": "object",
+                  "properties": {
+                    "host": {
+                      "type": "string"
+                    },
+                    "port": {
+                      "type": "string"
+                    },
+                    "timeout": {
+                      "type": "integer"
+                    },
+                    "connectionHeaders": {
+                      "type": "object",
+                      "properties": {
+                        "login": {
+                          "type": "string"
+                        },
+                        "passcode": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "ssl": {
+                      "type": "boolean"
+                    }
+                  }
+                },
+                "headers": {
+                  "type": "object",
+                  "properties": {
+                    "server": {
+                      "type": "string"
+                    },
+                    "session": {
+                      "type": "string"
+                    },
+                    "heart-beat": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "error": {
+                  "type": "string"
+                },
+                "connected": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
