@@ -1,0 +1,74 @@
+name: Base Java Services Build and Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        options:
+          - dev
+          - pre-prod
+          - prod
+        required: true
+        default: dev
+        description: Which environment to build and deploy to?
+      service:
+        type: choice
+        options:
+          - ehr-transfer-service
+        required: true
+        description: Which service to build and deploy
+      is_deployment:
+        type: boolean
+        default: false
+        description: Whether to deploy of not
+        required: true
+
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        default: dev
+        required: true
+      service:
+        type: string
+        required: true
+      is_deployment:
+        type: boolean
+        default: false
+        required: true
+
+permissions:
+  pull-requests: write
+  id-token: write
+  contents: read
+
+jobs:
+  run_tests:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:             
+        working-directory: './services/${{ inputs.service }}'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: gradle
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: Build Code
+        run: ./gradlew build
+
+      - name: Run Unit Tests
+        run: ./gradlew test
+
+      - name: Run Integration Tests
+        run: ./tasks test_integration
