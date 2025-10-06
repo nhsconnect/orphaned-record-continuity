@@ -52,7 +52,7 @@ import static javax.jms.Session.CLIENT_ACKNOWLEDGE;
 import static uk.nhs.prm.repo.ehrtransferservice.database.enumeration.TransferTableAttribute.*;
 
 @TestConfiguration
-@Profile("localstack")        // <— opt-in only
+@Profile("test")        // <— opt-in only
 public class LocalStackAwsConfig {
     @Autowired Environment env;
 
