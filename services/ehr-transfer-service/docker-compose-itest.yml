@@ -1,0 +1,27 @@
+version: '2'
+services:
+  default:
+    links:
+      - mq-1:mq-1
+      - mq-2:mq-2
+      - localstack:localstack
+  mq-1:
+    image: symptoma/activemq:5.17.0
+    ports:
+      - 61616:61616
+      - 5672:5672
+  mq-2:
+    image: symptoma/activemq:5.17.0
+    ports:
+      - 61617:61616
+  localstack:
+    image: localstack/localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=sqs,sns,dynamodb,s3
+      - DEFAULT_REGION=eu-west-2
+      - HOSTNAME_EXTERNAL=localstack
+    volumes:
+      - "/var/lib/localstack:/var/lib/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"

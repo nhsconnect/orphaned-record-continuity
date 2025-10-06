@@ -1,0 +1,27 @@
+version: "3.8"
+
+services:
+  mq-1:
+    image: symptoma/activemq:5.17.0
+    ports:
+      - 61616:61616
+      - 5672:5672
+  mq-2:
+    image: symptoma/activemq:5.17.0
+    ports:
+      - 61617:61616
+  localstack:
+    container_name: "localstack-ehr-transfer-service"
+    image: localstack/localstack
+    network_mode: bridge
+    ports:
+      - "127.0.0.1:4587:4587"
+    environment:
+      - SERVICES=sqs,sns,dynamodb,s3
+      - DEFAULT_REGION=eu-west-2
+      - AWS_REGION=eu-west-2
+      - HOSTNAME_EXTERNAL=localhost
+      - EDGE_PORT=4587
+    volumes:
+      - "${TMPDIR:-/tmp}/localstack:/tmp/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"

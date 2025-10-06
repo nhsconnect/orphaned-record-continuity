@@ -1,0 +1,22 @@
+[
+    {
+        "environment": ${environment_variables},
+        "name": "${container_name}",
+        "image": "${ecr_url}/${image_name}:${image_tag}",
+        "cpu": ${cpu},
+        "memory": ${memory},
+        "readonlyRootFilesystem": true,
+        "mountPoints": [],
+        "logConfiguration": {
+            "logDriver": "awslogs",
+            "options": {
+                "awslogs-region": "${log_region}",
+                "awslogs-stream-prefix": "log",
+                "awslogs-group": "${log_group}"
+            }
+        },
+        "essential": true,
+        "volumesFrom": [],
+        "secrets": ${secrets}
+    }
+]

@@ -1,0 +1,32 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<MCCI_IN010000UK13 xmlns="urn:hl7-org:v3">
+    <!-- taken from https://data.developer.nhs.uk/dms/mim/4.2.00/Examples/MCCI_EX020101UK12.xml -->
+    <id root="BBBBP10A-A9D1-A411-F824-9F7A00A33757"/>
+    <creationTime value="200401061130"/>
+    <versionCode code="V3NPfIT3.0"/>
+    <interactionId root="2.16.840.1.113883.2.1.3.2.4.12" extension="PRPA_IN020000UK02"/>
+    <processingCode code="P"/>
+    <processingModeCode code="T"/>
+    <acceptAckCode code="NE"/>
+    <acknowledgement typeCode="AR">
+        <acknowledgementDetail typeCode="ER">
+            <code code="1" codeSystem="2.16.840.1.113883.2.1.3.2.4.17.32" displayName="Access denied"/>
+        </acknowledgementDetail>
+        <acknowledgementDetail typeCode="WG">
+            <code code="2" codeSystem="2.16.840.1.113883.2.1.3.2.4.17.59" displayName="Made up warning for testing"/>
+        </acknowledgementDetail>
+        <messageRef>
+            <id root="11111111-65D3-EC42-BC31-62522532BC5D"/>
+        </messageRef>
+    </acknowledgement>
+    <communicationFunctionRcv>
+        <device>
+            <id root="1.2.826.0.1285.0.2.0.107" extension="ZZZ999-100000000900001"/>
+        </device>
+    </communicationFunctionRcv>
+    <communicationFunctionSnd>
+        <device>
+            <id root="1.2.826.0.1285.0.2.0.107" extension="ZZZ000-100000000800001"/>
+        </device>
+    </communicationFunctionSnd>
+</MCCI_IN010000UK13>
