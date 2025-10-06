@@ -35,9 +35,7 @@ jar {
 
 configurations {
     integrationImplementation.extendsFrom testImplementation
-    integrationRuntime.extendsFrom     integrationImplementation.extendsFrom testImplementation
-    // was: integrationRuntime.extendsFrom testRuntime
-    integrationRuntime.extendsFrom testRuntimeClasspath
+    integrationRuntimeClasspath.extendsFrom testRuntimeClasspath
 }
 
 dependencies {
