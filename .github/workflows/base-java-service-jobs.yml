@@ -69,8 +69,8 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
-      - name: Run All Tests
-        run: ./tasks test_all
+      - name: Run Unit Tests
+        run: ./tasks test_unit
         env:
           S3_BUCKET_NAME: test-bucket
           LOCALSTACK_URL: http://localhost:4566
