@@ -17,6 +17,7 @@ on:
         options:
           - ehr-repo
           - ehr-out-service
+          - gp2gp-messenger
         required: true
         description: Which service to build and deploy
       is_deployment:

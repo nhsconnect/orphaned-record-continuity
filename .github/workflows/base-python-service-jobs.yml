@@ -1,4 +1,4 @@
-name: Base Node Services Build and Deploy
+name: Base Python Services Build and Deploy
 
 on:
   workflow_dispatch:
