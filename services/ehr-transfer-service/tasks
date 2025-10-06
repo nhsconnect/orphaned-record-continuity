@@ -210,7 +210,7 @@ case "${command}" in
       ./tasks _assemble
       ;;
   _test_unit)
-      gradle test
+      ./gradlew test
       ;;
   test_unit)
       configure_local_envs
