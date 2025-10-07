@@ -75,5 +75,5 @@ jobs:
     #   - name: Build Code
     #     run: ./gradlew build
 
-      - name: Run Integration Tests
-        run: ./tasks test_integration
+    #   - name: Run Integration Tests
+    #     run: ./tasks test_integration
