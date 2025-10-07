@@ -21,6 +21,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
 import org.springframework.jms.config.JmsListenerContainerFactory;
+import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -125,7 +126,7 @@ public class LocalStackAwsConfig {
     @Bean
     public static SqsClient sqsClient(@Value("${localstack.url}") String localstackUrl) throws URISyntaxException {
         return SqsClient.builder()
-                .credentialsProvider((()-> AwsBasicCredentials.create("FAKE", "FAKE")))
+                .credentialsProvider((()-> AwsBasicCredentials.create("LSIA5678901234567890", "LSIA5678901234567890")))
                 .endpointOverride(new URI(localstackUrl))
                 .build();
     }
@@ -153,7 +154,7 @@ public class LocalStackAwsConfig {
     @Bean
     public AmazonS3 amazonS3(@Value("${localstack.url}") String localstackUrl) {
         return AmazonS3ClientBuilder.standard()
-                .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("FAKE", "FAKE")))
+                .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("LSIA5678901234567890", "LSIA5678901234567890")))
                 .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(localstackUrl, "eu-west-2"))
                 .build();
     }
@@ -166,19 +167,22 @@ public class LocalStackAwsConfig {
     public static S3Client s3Client(@Value("${localstack.url}") String localstackUrl) {
         return S3Client.builder()
                 .endpointOverride(URI.create(localstackUrl))
-                .forcePathStyle(true)
                 .region(Region.EU_WEST_2)
                 .credentialsProvider(StaticCredentialsProvider.create(new AwsCredentials() {
                     @Override
                     public String accessKeyId() {
-                        return "FAKE";
+                        return "LSIA5678901234567890";
                     }
 
                     @Override
                     public String secretAccessKey() {
-                        return "FAKE";
+                        return "LSIA5678901234567890";
                     }
                 }))
+                .serviceConfiguration(
+                        S3Configuration.builder()
+                                .pathStyleAccessEnabled(true)
+                                .build())
                 .build();
     }
 
@@ -189,7 +193,7 @@ public class LocalStackAwsConfig {
     @Bean
     public static AmazonSQSAsync amazonSQSAsync(@Value("${localstack.url}") String localstackUrl) {
         return AmazonSQSAsyncClientBuilder.standard()
-                .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("FAKE", "FAKE")))
+                .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("LSIA5678901234567890", "LSIA5678901234567890")))
                 .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(localstackUrl, "eu-west-2"))
                 .build();
     }
@@ -202,7 +206,7 @@ public class LocalStackAwsConfig {
     @Bean
     public static AmazonSNS amazonSNS(@Value("${localstack.url}") String localstackUrl) {
         return AmazonSNSClientBuilder.standard()
-                .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("FAKE", "FAKE")))
+                .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("LSIA5678901234567890", "LSIA5678901234567890")))
                 .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(localstackUrl, "eu-west-2"))
                 .build();
     }
@@ -220,12 +224,12 @@ public class LocalStackAwsConfig {
                 .credentialsProvider(StaticCredentialsProvider.create(new AwsCredentials() {
                     @Override
                     public String accessKeyId() {
-                        return "FAKE";
+                        return "LSIA5678901234567890";
                     }
 
                     @Override
                     public String secretAccessKey() {
-                        return "FAKE";
+                        return "LSIA5678901234567890";
                     }
                 }))
                 .build();
@@ -240,12 +244,12 @@ public class LocalStackAwsConfig {
                         StaticCredentialsProvider.create(new AwsCredentials() {
                             @Override
                             public String accessKeyId() {
-                                return "FAKE";
+                                return "LSIA5678901234567890";
                             }
 
                             @Override
                             public String secretAccessKey() {
-                                return "FAKE";
+                                return "LSIA5678901234567890";
                             }
                         }))
                 .build();
@@ -310,7 +314,6 @@ public class LocalStackAwsConfig {
         var waiter = s3Client.waiter();
         var createBucketRequest = CreateBucketRequest.builder()
                 .bucket(sqsLargeMessageBucketName)
-                .grantFullControl("GrantFullControl")
                 .build();
 
         for (var bucket: s3Client.listBuckets().buckets()) {

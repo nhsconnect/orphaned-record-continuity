@@ -11,15 +11,14 @@ services:
   localstack:
     container_name: "localstack-ehr-transfer-service"
     image: localstack/localstack
-    network_mode: bridge
     ports:
-      - "127.0.0.1:4566:4566"
+      - "4566:4566"
     environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
       - SERVICES=sqs,sns,dynamodb,s3
       - DEFAULT_REGION=eu-west-2
       - AWS_REGION=eu-west-2
       - HOSTNAME_EXTERNAL=localhost
       - EDGE_PORT=4566
     volumes:
-      - "${TMPDIR:-/tmp}/localstack:/tmp/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
