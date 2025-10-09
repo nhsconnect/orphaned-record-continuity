@@ -61,10 +61,8 @@ jobs:
           java-version: '21'
           cache: gradle
 
-      - name: Start LocalStack
-        uses: LocalStack/setup-localstack@v0.2.4
-        with:
-          install-awslocal: 'true'
+      - name: Run Localstack on Docker
+        run: docker compose -f docker-compose.localstack-local.yaml up -d
 
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
