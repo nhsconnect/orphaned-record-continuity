@@ -57,7 +57,10 @@ public class SimpleAmqpQueue {
     private Producer createProducer() {
         var ctx = new AMQPContext(AMQPContext.CLIENT);
         var activeMqHostname = getEnvVarOrDefault("EHR_TRANSFER_SERVICE_TEST_ACTIVE_MQ_HOSTNAME", "127.0.0.1");
-        var connection = new Connection(ctx, activeMqHostname, 5672, true);
+        var user = getEnvVarOrDefault("EHR_TRANSFER_SERVICE_MHS_QUEUE_USERNAME", "admin");
+        var pass = getEnvVarOrDefault("EHR_TRANSFER_SERVICE_MHS_QUEUE_PASSWORD", "admin");
+
+        var connection = new Connection(ctx, activeMqHostname, 5672, user, pass);
         try {
             connection.connect();
             var session = connection.createSession(100, 100);

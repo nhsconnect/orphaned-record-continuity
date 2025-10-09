@@ -64,7 +64,6 @@ public class LocalStackAwsConfig {
     @Autowired
     private SnsClient snsClient;
 
-
     @Value("${aws.repoIncomingQueueName}")
     private String repoIncomingQueueName;
 
@@ -126,7 +125,7 @@ public class LocalStackAwsConfig {
     @Bean
     public static SqsClient sqsClient(@Value("${localstack.url}") String localstackUrl) throws URISyntaxException {
         return SqsClient.builder()
-                .credentialsProvider((()-> AwsBasicCredentials.create("LSIA5678901234567890", "LSIA5678901234567890")))
+                .credentialsProvider((()-> AwsBasicCredentials.create("LSIAQAAAAAAVNCBMPNSG", "LSIAQAAAAAAVNCBMPNSG")))
                 .endpointOverride(new URI(localstackUrl))
                 .build();
     }
@@ -154,7 +153,7 @@ public class LocalStackAwsConfig {
     @Bean
     public AmazonS3 amazonS3(@Value("${localstack.url}") String localstackUrl) {
         return AmazonS3ClientBuilder.standard()
-                .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("LSIA5678901234567890", "LSIA5678901234567890")))
+                .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("LSIAQAAAAAAVNCBMPNSG", "LSIAQAAAAAAVNCBMPNSG")))
                 .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(localstackUrl, "eu-west-2"))
                 .build();
     }
@@ -171,12 +170,12 @@ public class LocalStackAwsConfig {
                 .credentialsProvider(StaticCredentialsProvider.create(new AwsCredentials() {
                     @Override
                     public String accessKeyId() {
-                        return "LSIA5678901234567890";
+                        return "LSIAQAAAAAAVNCBMPNSG";
                     }
 
                     @Override
                     public String secretAccessKey() {
-                        return "LSIA5678901234567890";
+                        return "LSIAQAAAAAAVNCBMPNSG";
                     }
                 }))
                 .serviceConfiguration(
@@ -193,7 +192,7 @@ public class LocalStackAwsConfig {
     @Bean
     public static AmazonSQSAsync amazonSQSAsync(@Value("${localstack.url}") String localstackUrl) {
         return AmazonSQSAsyncClientBuilder.standard()
-                .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("LSIA5678901234567890", "LSIA5678901234567890")))
+                .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("LSIAQAAAAAAVNCBMPNSG", "LSIAQAAAAAAVNCBMPNSG")))
                 .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(localstackUrl, "eu-west-2"))
                 .build();
     }
@@ -206,7 +205,7 @@ public class LocalStackAwsConfig {
     @Bean
     public static AmazonSNS amazonSNS(@Value("${localstack.url}") String localstackUrl) {
         return AmazonSNSClientBuilder.standard()
-                .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("LSIA5678901234567890", "LSIA5678901234567890")))
+                .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("LSIAQAAAAAAVNCBMPNSG", "LSIAQAAAAAAVNCBMPNSG")))
                 .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(localstackUrl, "eu-west-2"))
                 .build();
     }
@@ -224,12 +223,12 @@ public class LocalStackAwsConfig {
                 .credentialsProvider(StaticCredentialsProvider.create(new AwsCredentials() {
                     @Override
                     public String accessKeyId() {
-                        return "LSIA5678901234567890";
+                        return "LSIAQAAAAAAVNCBMPNSG";
                     }
 
                     @Override
                     public String secretAccessKey() {
-                        return "LSIA5678901234567890";
+                        return "LSIAQAAAAAAVNCBMPNSG";
                     }
                 }))
                 .build();
@@ -244,12 +243,12 @@ public class LocalStackAwsConfig {
                         StaticCredentialsProvider.create(new AwsCredentials() {
                             @Override
                             public String accessKeyId() {
-                                return "LSIA5678901234567890";
+                                return "LSIAQAAAAAAVNCBMPNSG";
                             }
 
                             @Override
                             public String secretAccessKey() {
-                                return "LSIA5678901234567890";
+                                return "LSIAQAAAAAAVNCBMPNSG";
                             }
                         }))
                 .build();

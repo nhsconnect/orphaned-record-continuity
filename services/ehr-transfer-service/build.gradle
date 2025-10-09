@@ -91,7 +91,7 @@ dependencies {
     testImplementation 'com.google.guava:guava:33.0.0-jre'
     testImplementation 'org.awaitility:awaitility:4.2.0'
 
-    integrationImplementation 'com.swiftmq:swiftmq-client:12.5.4'
+    integrationImplementation 'com.swiftmq:swiftmq-client:13.1.2'
 }
 
 test {

@@ -1,10 +1,6 @@
+
 version: '2'
 services:
-  default:
-    links:
-      - mq-1:mq-1
-      - mq-2:mq-2
-      - localstack:localstack
   mq-1:
     image: symptoma/activemq:5.17.0
     ports:
