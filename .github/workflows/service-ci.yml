@@ -113,6 +113,7 @@ jobs:
     uses: './.github/workflows/base-java-service-jobs.yml'
     with:
       service: nems-event-processor
+      environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
     secrets: inherit
 
