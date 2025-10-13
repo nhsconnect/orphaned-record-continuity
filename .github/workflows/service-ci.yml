@@ -113,6 +113,8 @@ jobs:
     uses: './.github/workflows/base-java-service-jobs.yml'
     with:
       service: nems-event-processor
+      is_deployment: ${{ github.ref == 'refs/heads/main' }}
+    secrets: inherit
 
   ehr-transfer-service:
     needs: [ get_changed_files]
