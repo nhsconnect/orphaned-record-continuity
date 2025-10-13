@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<soap:Envelope xmlns:xsi="http://www.w3c.org/2001/XML-Schema-Instance"
+               xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
+               xmlns:eb="http://www.oasis-open.org/committees/ebxml-msg/schema/msg-header-2_0.xsd"
+               xmlns:xlink="http://www.w3.org/1999/xlink">
+    <soap:Header>
+        <eb:MessageHeader eb:version="2.0" soap:mustUnderstand="1">
+            <eb:From>
+                <eb:PartyId eb:type="urn:nhs:names:partyType:ocs+serviceInstance">YES-0000806</eb:PartyId>
+            </eb:From>
+            <eb:To>
+                <eb:PartyId eb:type="urn:nhs:names:partyType:ocs+serviceInstance">B86041-822710</eb:PartyId>
+            </eb:To>
+            <eb:CPAId>1206acb80a60982448e8</eb:CPAId>
+            <eb:ConversationId>13962cb7-6d46-4986-bdb4-3201bb25f1f7</eb:ConversationId>
+            <eb:Service>urn:nhs:names:services:pds</eb:Service>
+            <eb:Action>MCCI_IN010000UK13</eb:Action>
+            <eb:MessageData>
+                <eb:MessageId>88050774-EE90-4E9B-BDB9-2A0CE36E3D3F</eb:MessageId>
+                <eb:Timestamp>2021-12-24T11:22:52Z</eb:Timestamp>
+                <eb:RefToMessageId>0A48FAFB-8FCF-4B54-9B1E-377D4D8F2565</eb:RefToMessageId>
+            </eb:MessageData>
+            <eb:DuplicateElimination/>
+        </eb:MessageHeader>
+        <eb:AckRequested eb:version="2.0" soap:mustUnderstand="1"
+                         soap:actor="urn:oasis:names:tc:ebxml-msg:actor:toPartyMSH" eb:signed="false"/>
+        <eb:SyncReply eb:version="2.0" soap:mustUnderstand="1" soap:actor="http://schemas.xmlsoap.org/soap/actor/next"/>
+    </soap:Header>
+    <soap:Body>
+        <eb:Manifest xmlns:hl7ebxml="urn:hl7-org:transport/ebXML/DSTUv1.0" eb:version="2.0">
+            <eb:Reference xlink:href="cid:88050774-EE90-4E9B-BDB9-2A0CE36E3D3F@spine.nhs.uk">
+                <eb:Schema eb:location="urn:hl7-org:v3_MCCI_IN010000UK13.xsd" eb:version="13"/>
+                <eb:Description xml:lang="en">The HL7 payload</eb:Description>
+                <hl7ebxml:Payload style="HL7" encoding="XML" version="3.0"/>
+            </eb:Reference>
+        </eb:Manifest>
+    </soap:Body>
+</soap:Envelope>

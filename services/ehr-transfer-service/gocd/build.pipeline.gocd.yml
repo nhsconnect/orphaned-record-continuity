@@ -1,0 +1,102 @@
+format_version: 4
+pipelines:
+  'ehr-transfer-service':
+    group: repository
+    label_template: "${COUNT}-${git[:8]}"
+    materials:
+      git:
+        type: configrepo
+        blacklist:
+          - docs/**/*.*
+    stages:
+      - build:
+          clean_workspace: true
+          jobs:
+            sonar_analysis:
+              environment_variables:
+                NHS_ENVIRONMENT: dev
+              resources:
+                - docker
+              artifacts:
+                - build:
+                    source: build
+              tasks:
+                - exec:
+                    command: /bin/bash
+                    arguments:
+                      - -c
+                      - ./tasks run_sonar
+            test_unit:
+              resources:
+                - docker
+              artifacts:
+                - build:
+                    source: build
+              tasks:
+                - exec:
+                    command: /bin/bash
+                    arguments:
+                      - -c
+                      - ./tasks test_unit
+            test_integration:
+              environment_variables:
+                NHS_ENVIRONMENT: dev
+              resources:
+                - docker
+              artifacts:
+                - build:
+                    source: build
+              tabs:
+                TestReport: build/reports/tests/integration/index.html
+              tasks:
+                - exec:
+                    command: /bin/bash
+                    arguments:
+                      - -c
+                      - ./tasks test_integration
+            test_coverage:
+              artifacts:
+                - build:
+                    source: build/reports/jacoco
+              tabs:
+                coverage: jacoco/test/html/index.html
+              resources:
+                - docker
+              tasks:
+                - exec:
+                    command: /bin/bash
+                    arguments:
+                      - -c
+                      - ./tasks test_coverage
+            code_quality:
+              artifacts:
+                - build:
+                    source: build/reports/spotbugs
+              tabs:
+                MainCodeQa: spotbugs/main/spotbugs.html
+                TestCodeQa: spotbugs/test/spotbugs.html
+                ITestCodeQa: spotbugs/integration/spotbugs.html
+              resources:
+                - docker
+              tasks:
+                - exec:
+                    command: /bin/bash
+                    arguments:
+                      - -c
+                      - ./tasks code_quality
+      - docker:
+          clean_workspace: true
+          jobs:
+            build:
+              resources:
+                - docker
+              tasks:
+                - fetch:
+                    stage: build
+                    job: test_unit
+                    source: build
+                - exec:
+                    command: /bin/bash
+                    arguments:
+                      - -c
+                      - ./tasks assemble_docker

@@ -1,0 +1,39 @@
+services:
+  mq-1:
+    image: symptoma/activemq:5.18.6
+    ports:
+      - 61616:61616
+      - 5672:5672
+      - 8161:8161
+    environment:
+      - ACTIVEMQ_DISALLOW_WEBCONSOLE=false
+      - ACTIVEMQ_USERNAME=admin
+      - ACTIVEMQ_PASSWORD=admin
+      - ACTIVEMQ_WEBADMIN_USERNAME=admin
+      - ACTIVEMQ_WEBADMIN_PASSWORD=admin
+  mq-2:
+    image: symptoma/activemq:5.18.6
+    ports:
+      - 61617:61616
+      - 8162:8161
+    environment:
+      - ACTIVEMQ_DISALLOW_WEBCONSOLE=false
+      - ACTIVEMQ_USERNAME=admin
+      - ACTIVEMQ_PASSWORD=admin
+      - ACTIVEMQ_WEBADMIN_USERNAME=admin
+      - ACTIVEMQ_WEBADMIN_PASSWORD=admin
+
+  localstack:
+    container_name: "localstack-ehr-transfer-service"
+    image: localstack/localstack
+    ports:
+      - "4566:4566"
+    network_mode: bridge
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - SERVICES=sqs,sns,dynamodb,s3
+      - GATEWAY_LISTEN=4566
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
