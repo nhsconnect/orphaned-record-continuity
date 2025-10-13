@@ -198,6 +198,7 @@ case "${command}" in
       ./gradlew build
       ;;
   build)
+      configure_local_envs
       ./tasks _build
       ;;
   _assemble)
