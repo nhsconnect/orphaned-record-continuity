@@ -19,6 +19,7 @@ function check_env {
 
 function configure_local_envs {
   export AWS_REGION=${AWS_DEFAULT_REGION}
+  export AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
   export LOCALSTACK_URL="http://localhost:4566"
 }
 
@@ -27,7 +28,7 @@ function configure_local_envs {
 # Localstack #
 ##############
 
-function die_localstack_die {
+function teardown_localstack {
   echo docker processes running: $(docker ps)
 
   DOCKER_CONTAINERS_ON_PORT=$(docker ps --filter publish=4566 -q)
@@ -35,7 +36,7 @@ function die_localstack_die {
   echo docker processes running on expected localstack port: $DOCKER_CONTAINERS_ON_PORT
 
   if [ -z "$DOCKER_CONTAINERS_ON_PORT" ]; then
-    echo no localstack nonsense going on, cool
+    echo no localstack running
   else
     echo trying to kill localstack...
     docker stop $DOCKER_CONTAINERS_ON_PORT
@@ -49,18 +50,18 @@ function die_localstack_die {
 command="$1"
 case "${command}" in
   teardown_localstack)
-      die_localstack_die
+      teardown_localstack
       ;;
   _build)
       rm -rf build/
-      gradle assemble
+      ./gradlew build -x integration
       ;;
   _test_unit)
       ./gradlew test
       ;;
   _test_integration)
-      shift
-      gradle --info integration $*
+      configure_local_envs
+      ./gradlew --info integration
       ;;
   _test_coverage)
       gradle jacocoTestCoverageVerification
