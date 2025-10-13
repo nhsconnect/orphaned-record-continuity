@@ -120,9 +120,8 @@ jobs:
           AUTHORIZATION_KEYS: auth-key-1
         run: npm run test:integration
 
-
   build_and_publish:
-    name: Build & Publish
+    name: Build and Publish
     needs: [run_tests]
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
@@ -154,7 +153,7 @@ jobs:
       - name: NPM Build
         run: npm run build  
         
-      - name: docker build, tag
+      - name: Docker Build and Tag
         env:
           REF_NAME: ${{ github.ref_name }}
           REGISTRY: ${{ steps.ecr-login.outputs.registry }}
@@ -169,7 +168,7 @@ jobs:
           fi
           docker build "${TAG_ARGS[@]}" --build-arg BUILD_TAG="$IMAGE_TAG" .
 
-      - name: docker publish
+      - name: Docker Publish
         if: ${{ inputs.is_deployment }}
         env:
           REF_NAME: ${{ github.ref_name }}
@@ -192,7 +191,7 @@ jobs:
           fi  
           
   deploy_infra:
-    name: Deploy EHR Infrastructure
+    name: Deploy Infrastructure
     needs: [build_and_publish]
     uses: nhsconnect/prm-deductions-infra/.github/workflows/base-deploy-stack.yml@PRM-481-1
     with:

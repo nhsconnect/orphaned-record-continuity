@@ -69,3 +69,84 @@ jobs:
 
       - name: Run All Tests
         run: ./tasks test_all
+
+  build_and_publish:
+    name: Build & Publish
+    needs: [run_tests]
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    defaults:
+      run:
+        working-directory: './services/${{ inputs.service }}'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: gradle
+
+      - name: Configure AWS Credentials (Read/Write)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.IAM_ROLE }}
+          aws-region: ${{ vars.AWS_REGION }}
+          mask-aws-account-id: true
+          role-skip-session-tagging: true
+
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Java Build
+        run: ./tasks build
+
+      - name: Docker Build and Tag
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          REPOSITORY: deductions/${{ inputs.service }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          TAG_ARGS=(-t "$REGISTRY/$REPOSITORY:$IMAGE_TAG" -t "$REGISTRY/$REPOSITORY:latest")
+          if [ -n "${REF_NAME:-}" ]; then
+            REF_TAG="${REF_NAME//\//-}"
+            TAG_ARGS+=(-t "$REGISTRY/$REPOSITORY:$REF_TAG")
+          fi
+          docker build "${TAG_ARGS[@]}" --build-arg BUILD_TAG="$IMAGE_TAG" .
+
+      - name: Docker Publish
+        if: ${{ inputs.is_deployment }}
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          REPOSITORY: deductions/${{ inputs.service }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          TAG_ARGS=(-t "$REGISTRY/$REPOSITORY:$IMAGE_TAG" -t "$REGISTRY/$REPOSITORY:latest")
+          if [ -n "${REF_NAME:-}" ]; then
+            REF_TAG="${REF_NAME//\//-}"
+            TAG_ARGS+=(-t "$REGISTRY/$REPOSITORY:$REF_TAG")
+          fi
+          docker push "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
+          docker push "$REGISTRY/$REPOSITORY:latest"
+
+          if [ -n "${REF_NAME:-}" ]; then
+            REF_TAG="${REF_NAME//\//-}"
+            docker push "$REGISTRY/$REPOSITORY:$REF_TAG"
+          fi  
+
+  deploy_infra:
+    name: Deploy Infrastructure
+    needs: [build_and_publish]
+    uses: nhsconnect/prm-deductions-infra/.github/workflows/base-deploy-stack.yml@PRM-481-1
+    with:
+      stack: ${{ inputs.service }}
+      environment: ${{ inputs.environment }}
+      is_deployment: ${{ inputs.is_deployment }}
+    secrets: inherit
