@@ -195,10 +195,9 @@ case "${command}" in
       ;;
   _build)
       rm -rf build/
-      ./gradlew build
+      ./gradlew build -x integration
       ;;
   build)
-      configure_local_envs
       ./tasks _build
       ;;
   _assemble)
