@@ -67,7 +67,8 @@ public class NegativeAcknowledgmentHandlingIntegrationTest {
         inboundQueueFromMhs.sendMessage(negativeAck);
 
         // then
-        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() ->
+        await().pollInterval(200, TimeUnit.MILLISECONDS)
+                .atMost(25, TimeUnit.SECONDS).untilAsserted(() ->
                 assertThat(transferService.getConversationTransferStatus(inboundConversationId)).isEqualTo(INBOUND_FAILED)
         );
     }

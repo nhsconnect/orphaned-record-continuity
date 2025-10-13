@@ -77,7 +77,7 @@ function configure_local_envs {
   export EHR_TRANSFER_SERVICE_MHS_QUEUE_PASSWORD="admin"
   export LOCALSTACK_URL="http://localhost:4566"
   export AWS_REGION="eu-west-2"
-  export AWS_DEFAULT_REGION=="eu-west-2"
+  export AWS_DEFAULT_REGION="eu-west-2"
   export S3_BUCKET_NAME="test-bucket"
   export DYNAMODB_NAME="local-test-db"
   export DYNAMODB_LOCAL_ENDPOINT="http://localhost:4566"
@@ -287,6 +287,7 @@ case "${command}" in
       ./tasks _tf_apply
       ;;
   run_localstack_local)
+      configure_local_envs
       docker compose -f docker-compose.localstack-local.yaml up -d
       ;;
   promote_docker_image)
