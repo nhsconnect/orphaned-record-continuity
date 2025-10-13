@@ -27,7 +27,6 @@ import static org.mockito.Mockito.doAnswer;
 @ContextConfiguration(classes = {
         LocalStackAwsConfig.class
 })
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class MessageAcknowledgementTest {
 
     @Autowired
