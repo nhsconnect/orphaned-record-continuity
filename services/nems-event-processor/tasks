@@ -19,6 +19,7 @@ function check_env {
 
 function configure_local_envs {
   export AWS_REGION=${AWS_DEFAULT_REGION}
+  export AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
   export LOCALSTACK_URL="http://localhost:4566"
 }
 
