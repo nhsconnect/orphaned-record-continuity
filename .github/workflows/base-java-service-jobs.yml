@@ -67,5 +67,8 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
+      - name: Await Docker containers
+        run: sleep 5
+
       - name: Run All Tests
         run: ./tasks _test_all
