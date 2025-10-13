@@ -54,7 +54,7 @@ class MetricPublisherTest {
 
         final MetricDataResult[] metricData = new MetricDataResult[1];
         await().atMost(60, TimeUnit.SECONDS).untilAsserted(() -> {
-            metricData[0] = fetchRecentMetricData(2, getMetricWhere(metrics, metricHasDimension("Environment", "ci")));
+            metricData[0] = fetchRecentMetricData(2, getMetricWhere(metrics, metricHasDimension("Environment", "local")));
             assertThat(metricData[0].values()).isNotEmpty();
         });
 
