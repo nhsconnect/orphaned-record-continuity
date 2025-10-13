@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -26,6 +27,7 @@ import static org.mockito.Mockito.doAnswer;
 @ContextConfiguration(classes = {
         LocalStackAwsConfig.class
 })
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class MessageAcknowledgementTest {
 
     @Autowired
@@ -48,33 +50,33 @@ class MessageAcknowledgementTest {
         }).when(nemsEventHandler).processNemsEvent(anyString());
     }
 
-//    @Test
-//    void shouldNotImplicitlyAcknowledgeAFailedMessageWhenTheNextMessageIsProcessedOk_SoThatItIsThereToBeReprocessedAfterVisibilityTimeout() {
-//
-//        sendMessage(nemsEventQueueName, "throw me");
-//        stubbedNemsEventHandler.waitUntilProcessed("throw me", 10);
-//
-//        sendMessage(nemsEventQueueName, "process me ok");
-//        stubbedNemsEventHandler.waitUntilProcessed("process me ok", 10);
-//
-//        assertThat(getIncomingNemsMessagesCount("ApproximateNumberOfMessagesNotVisible")).isEqualTo(1);
-//    }
-//
-//    private int getIncomingNemsMessagesCount(String countAttributeName) {
-//        var countAttribute = QueueAttributeName.fromValue(countAttributeName);
-//        var attributesRequest = GetQueueAttributesRequest.builder()
-//                .attributeNames(countAttribute)
-//                .queueUrl(getQueueUrl(nemsEventQueueName))
-//                .build();
-//        var attributes = sqsClient.getQueueAttributes(attributesRequest).attributes();
-//        return Integer.parseInt(attributes.get(countAttribute));
-//    }
-//
-//    private void sendMessage(String queueName, String message) {
-//        sqsClient.sendMessage(SendMessageRequest.builder().queueUrl(getQueueUrl(queueName)).messageBody(message).build());
-//    }
-//
-//    private String getQueueUrl(String queueName) {
-//        return sqsClient.getQueueUrl(GetQueueUrlRequest.builder().queueName(queueName).build()).queueUrl();
-//    }
+    @Test
+    void shouldNotImplicitlyAcknowledgeAFailedMessageWhenTheNextMessageIsProcessedOk_SoThatItIsThereToBeReprocessedAfterVisibilityTimeout() {
+
+        sendMessage(nemsEventQueueName, "throw me");
+        stubbedNemsEventHandler.waitUntilProcessed("throw me", 10);
+
+        sendMessage(nemsEventQueueName, "process me ok");
+        stubbedNemsEventHandler.waitUntilProcessed("process me ok", 10);
+
+        assertThat(getIncomingNemsMessagesCount("ApproximateNumberOfMessagesNotVisible")).isEqualTo(1);
+    }
+
+    private int getIncomingNemsMessagesCount(String countAttributeName) {
+        var countAttribute = QueueAttributeName.fromValue(countAttributeName);
+        var attributesRequest = GetQueueAttributesRequest.builder()
+                .attributeNames(countAttribute)
+                .queueUrl(getQueueUrl(nemsEventQueueName))
+                .build();
+        var attributes = sqsClient.getQueueAttributes(attributesRequest).attributes();
+        return Integer.parseInt(attributes.get(countAttribute));
+    }
+
+    private void sendMessage(String queueName, String message) {
+        sqsClient.sendMessage(SendMessageRequest.builder().queueUrl(getQueueUrl(queueName)).messageBody(message).build());
+    }
+
+    private String getQueueUrl(String queueName) {
+        return sqsClient.getQueueUrl(GetQueueUrlRequest.builder().queueName(queueName).build()).queueUrl();
+    }
 }
