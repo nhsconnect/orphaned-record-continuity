@@ -16,6 +16,8 @@ on:
         type: choice
         options:
           - nems-event-processor
+          - ehr-transfer-service
+
         required: true
         description: Which service to build and deploy
       is_deployment:
@@ -68,7 +70,7 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Run All Tests
-        run: ./tasks _test_all
+        run: ./tasks test_all
 
   build_and_publish:
     name: Build & Publish

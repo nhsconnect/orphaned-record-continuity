@@ -1,4 +1,4 @@
-name: Base Node Services Build and Deploy
+name: Base Python Services Build and Deploy
 
 on:
   workflow_dispatch:
@@ -76,13 +76,11 @@ jobs:
         working-directory: ./services/${{ inputs.service }}
     steps:
       - uses: actions/checkout@v4
-             
 
       - name: Set up Python 3.9
         uses: actions/setup-python@v5
         with:
           python-version: 3.9
-
 
       - name: Configure AWS credentials
         id: auth
@@ -92,12 +90,10 @@ jobs:
           role-to-assume: ${{ secrets.IAM_ROLE }}
           role-skip-session-tagging: true
           aws-region: ${{ vars.AWS_REGION }}
- 
 
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
-
 
       - name: Get ECR repository URI from SSM
         id: ecr-repo
@@ -107,7 +103,6 @@ jobs:
           --query "Parameter.Value" --output text)
           echo "::add-mask::$uri"
           echo "uri=$uri" >> $GITHUB_OUTPUT
-
 
       - name: Build Docker Image
         env:
@@ -121,7 +116,6 @@ jobs:
             TAG_ARGS+=(-t "$ECR_URI:$REF_TAG")
           fi
           docker build "${TAG_ARGS[@]}" --build-arg IMAGE_TAG="$IMAGE_TAG" --build-arg ENV=${{steps.auth.outputs.aws-account-id}} .
-
 
       - name: Push Docker Image
         if: ${{ inputs.is_deployment }}
@@ -137,10 +131,9 @@ jobs:
             docker push "$ECR_URI:$REF_TAG"
           fi
 
-
   deploy_infra:
     if: ${{ inputs.deploy_infra && inputs.is_deployment }}
-    name: Deploy EHR Infrastructure
+    name: Deploy Infrastructure
     needs: [ build-and-publish-service ]
     uses: nhsconnect/prm-deductions-infra/.github/workflows/base-deploy-stack.yml@r0.1.1
     with:
