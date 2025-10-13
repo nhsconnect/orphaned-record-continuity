@@ -2,12 +2,14 @@ package uk.nhs.prm.deductions.nemseventprocessor.nemsevents;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.*;
 import uk.nhs.prm.deductions.nemseventprocessor.audit.AuditMessage;
@@ -20,10 +22,9 @@ import static uk.nhs.prm.deductions.nemseventprocessor.nemsevents.LocalStackAwsC
 
 @SpringBootTest()
 @ActiveProfiles("test")
-@TestPropertySource(properties = {"environment = local"})
+@ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = LocalStackAwsConfig.class)
 class NemsEventsIntegrationTest {
-
     @Autowired
     private SqsClient sqsClient;
 
