@@ -18,6 +18,7 @@ import software.amazon.awssdk.services.sns.model.DeleteTopicRequest;
 import uk.nhs.prm.deductions.nemseventprocessor.config.SnsClientSpringConfiguration;
 import uk.nhs.prm.deductions.nemseventprocessor.config.SqsClientSpringConfiguration;
 import uk.nhs.prm.deductions.nemseventprocessor.metrics.healthprobes.UnhandledSnsHealthProbe;
+import uk.nhs.prm.deductions.nemseventprocessor.nemsevents.LocalStackAwsConfig;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,11 +29,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @SpringBootTest()
 @ActiveProfiles("test")
 @SpringJUnitConfig(ScheduledTestConfig.class)
-@TestPropertySource(properties = {"environment = ci"})
-@ContextConfiguration(classes = {SnsClientSpringConfiguration.class, SqsClientSpringConfiguration.class, MetricPublisher.class, AppConfig.class})
+@TestPropertySource(properties = {"environment = local"})
+@ContextConfiguration(classes = {LocalStackAwsConfig.class})
 @ExtendWith(MockitoExtension.class)
 class UnhandledSnsHealthProbeTest {
-
     @Autowired
     private SnsClient snsClient;
     static CreateTopicResponse topic;

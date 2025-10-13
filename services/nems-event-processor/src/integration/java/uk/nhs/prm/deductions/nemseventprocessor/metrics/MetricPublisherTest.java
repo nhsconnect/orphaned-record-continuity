@@ -14,6 +14,7 @@ import software.amazon.awssdk.services.cloudwatch.CloudWatchClient;
 import software.amazon.awssdk.services.cloudwatch.model.*;
 import uk.nhs.prm.deductions.nemseventprocessor.config.SnsClientSpringConfiguration;
 import uk.nhs.prm.deductions.nemseventprocessor.config.SqsClientSpringConfiguration;
+import uk.nhs.prm.deductions.nemseventprocessor.nemsevents.LocalStackAwsConfig;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -28,15 +29,17 @@ import static org.awaitility.Awaitility.await;
 @SpringBootTest()
 @ActiveProfiles("test")
 @SpringJUnitConfig(ScheduledTestConfig.class)
-@TestPropertySource(properties = {"environment = ci"})
-@ContextConfiguration(classes = {SnsClientSpringConfiguration.class, SqsClientSpringConfiguration.class, MetricPublisher.class, AppConfig.class})
+@TestPropertySource(properties = {"environment = local"})
+@ContextConfiguration(classes = { LocalStackAwsConfig.class})
 @ExtendWith(MockitoExtension.class)
 class MetricPublisherTest {
 
     @Autowired
     private MetricPublisher publisher;
 
-    CloudWatchClient cloudWatchClient = CloudWatchClient.create();
+    @Autowired
+    private CloudWatchClient cloudWatchClient;
+
     static final double HEALTHY_HEALTH_VALUE = 1.0;
 
     @Test

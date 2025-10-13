@@ -6,7 +6,7 @@ services:
     ports:
       - "127.0.0.1:4566:4566"
     environment:
-      - SERVICES=sqs,sns
+      - SERVICES=sqs,sns,cloudwatch
       - DEFAULT_REGION=eu-west-2
       - GATEWAY_LISTEN=4566
     volumes:

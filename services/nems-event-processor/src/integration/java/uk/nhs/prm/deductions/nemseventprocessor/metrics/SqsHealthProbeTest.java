@@ -19,6 +19,7 @@ import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
 import uk.nhs.prm.deductions.nemseventprocessor.config.SnsClientSpringConfiguration;
 import uk.nhs.prm.deductions.nemseventprocessor.config.SqsClientSpringConfiguration;
 import uk.nhs.prm.deductions.nemseventprocessor.metrics.healthprobes.SqsHealthProbe;
+import uk.nhs.prm.deductions.nemseventprocessor.nemsevents.LocalStackAwsConfig;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,14 +31,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @SpringBootTest()
 @ActiveProfiles("test")
 @SpringJUnitConfig(ScheduledTestConfig.class)
-@TestPropertySource(properties = {"environment = ci"})
-@ContextConfiguration(classes = {SnsClientSpringConfiguration.class, SqsClientSpringConfiguration.class, MetricPublisher.class, AppConfig.class})
+@TestPropertySource(properties = {"environment = local"})
+@ContextConfiguration(classes = {LocalStackAwsConfig.class})
 @ExtendWith(MockitoExtension.class)
 public class SqsHealthProbeTest {
 
     @Autowired
     private SqsClient sqsClient;
+
     static CreateQueueResponse queue;
+
     static final String queueName = "integration-test-sqs-health-probe";
 
     @BeforeAll

@@ -26,7 +26,7 @@ import static uk.nhs.prm.repo.ehrtransferservice.database.enumeration.Conversati
 @SpringBootTest
 @ActiveProfiles("test")
 @ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes = { LocalStackAwsConfig.class })
+@ContextConfiguration(classes = {LocalStackAwsConfig.class })
 @ExtendWith(ForceXercesParserExtension.class)
 public class TransferServiceTest {
     @Autowired

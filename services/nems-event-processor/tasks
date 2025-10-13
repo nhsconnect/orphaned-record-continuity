@@ -21,11 +21,6 @@ function configure_local_envs {
   export LOCALSTACK_URL="http://localhost:4566"
   export AWS_REGION="eu-west-2"
   export AWS_DEFAULT_REGION="eu-west-2"
-  export S3_BUCKET_NAME="test-bucket"
-  export DYNAMODB_NAME="local-test-db"
-  export DYNAMODB_LOCAL_ENDPOINT="http://localhost:4566"
-  export AWS_ACCESS_KEY_ID="LSIAQAAAAAAVNCBMPNSG"
-  export AWS_SECRET_ACCESS_KEY="LSIAQAAAAAAVNCBMPNSG"
   export NHS_ENVIRONMENT="local"
 }
 

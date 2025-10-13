@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.services.cloudwatch.CloudWatchClient;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sns.SnsClient;
@@ -53,6 +54,16 @@ public class LocalStackAwsConfig {
     @Primary
     public static SnsClient snsClient(@Value("${localstack.url}") String localstackUrl) {
         return SnsClient.builder()
+                .endpointOverride(URI.create(localstackUrl))
+                .region(Region.EU_WEST_2)
+                .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("LSIAQAAAAAAVNCBMPNSG", "LSIAQAAAAAAVNCBMPNSG")))
+                .build();
+    }
+
+    @Bean
+    @Primary
+    public static CloudWatchClient cloudwatchClient(@Value("${localstack.url}") String localstackUrl) {
+        return CloudWatchClient.builder()
                 .endpointOverride(URI.create(localstackUrl))
                 .region(Region.EU_WEST_2)
                 .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("LSIAQAAAAAAVNCBMPNSG", "LSIAQAAAAAAVNCBMPNSG")))
