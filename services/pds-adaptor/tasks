@@ -51,7 +51,7 @@ case "${command}" in
       ./tasks _test_unit
       ;;
   _test_integration)
-      gradle --info integration
+      ./gradlew --info integration
       ;;
   test_integration)
       configure_local_envs
@@ -66,21 +66,21 @@ case "${command}" in
         ./tasks _test_performance
         ;;
   _test_coverage)
-      gradle jacocoTestCoverageVerification
+      ./gradlew jacocoTestCoverageVerification
       ;;
   test_coverage)
       configure_local_envs
       ./tasks _test_coverage
       ;;
   _code_quality)
-      gradle check -x test -x integration
+      ./gradlew check -x test -x integration
       ;;
   code_quality)
       configure_local_envs
       ./tasks _code_quality
       ;;
   _test_all)
-    gradle test integration jacocoTestCoverageVerification check
+    ./gradlew test integration jacocoTestCoverageVerification check
     ;;
   test_all)
     configure_local_envs
