@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+
+set -Eeo pipefail
+
+###########################
+# Local Config Parameters #
+###########################
+
+AWS_DEFAULT_REGION=eu-west-2
+IMAGE_REPO_NAME=deductions/nems-event-processor
+export NHS_SERVICE=nems-event-processor
+
+function check_env {
+  if [[ -z "${NHS_ENVIRONMENT}" ]]; then
+    echo "Must set NHS_ENVIRONMENT"
+    exit 1
+  fi
+}
+
+function configure_local_envs {
+  export LOCALSTACK_URL="http://localhost:4566"
+  export AWS_REGION="eu-west-2"
+  export AWS_DEFAULT_REGION="eu-west-2"
+  export NHS_ENVIRONMENT="local"
+}
+
+
+##############
+# Localstack #
+##############
+
+function teardown_localstack {
+  echo docker processes running: $(docker ps)
+
+  DOCKER_CONTAINERS_ON_PORT=$(docker ps --filter publish=4566 -q)
+
+  echo docker processes running on expected localstack port: $DOCKER_CONTAINERS_ON_PORT
+
+  if [ -z "$DOCKER_CONTAINERS_ON_PORT" ]; then
+    echo no localstack running
+  else
+    echo trying to kill localstack...
+    docker stop $DOCKER_CONTAINERS_ON_PORT
+  fi
+}
+
+###########
+## TASKS ##
+###########
+
+command="$1"
+case "${command}" in
+  teardown_localstack)
+      teardown_localstack
+      ;;
+  build)
+      rm -rf build/
+      ./gradlew build -x integration
+      ;;
+  _test_unit)
+      ./gradlew test
+      ;;
+  _test_integration)
+      configure_local_envs
+      ./gradlew --info integration
+      ;;
+  _test_coverage)
+      gradle jacocoTestCoverageVerification
+      ;;
+  _code_quality)
+      gradle check -x test -x integration
+      ;;
+  test_all)
+      configure_local_envs
+      ./gradlew clean test integration jacocoTestCoverageVerification check
+      ;;
+  run_local)
+      configure_local_envs
+      ./gradlew bootRun
+      ;;
+  run_localstack_local)
+      docker-compose -f docker-compose.localstack-local.yaml up -d
+      ;;
+  *)
+      echo "Invalid command: '${command}'"
+      exit 1
+      ;;
+esac
+set +e

@@ -15,7 +15,9 @@ on:
       service:
         type: choice
         options:
+          - nems-event-processor
           - ehr-transfer-service
+
         required: true
         description: Which service to build and deploy
       is_deployment:
