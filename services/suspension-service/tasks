@@ -69,7 +69,7 @@ function set_image_tag() {
 }
 
 function get_aws_account_id {
-    AWS_ACCOUNT_ID=$(dojo -c Dojofile-infra "aws sts get-caller-identity | jq -r .Account")
+    AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account)
 }
 
 function configure_envs {
@@ -123,35 +123,19 @@ function tf_apply {
   terraform output -json > tf-out.json
 }
 
-############################
-# Docker Related Functions #
-############################
-
-function docker_login {
-  echo Logging in to Amazon ECR...
-  eval $(dojo -c Dojofile-infra "aws ecr get-login --no-include-email --region $AWS_DEFAULT_REGION")
-}
-
-function configure_docker_repository_uri {
-  docker_login
-  get_aws_account_id
-  export REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/$IMAGE_REPO_NAME
-}
-
-function build_docker_image() {
-  echo Build started on $(date)
-  set_image_tag
-  echo Building the Docker image...
-  docker build --build-arg UTILS_VERSION=$AWS_HELPERS_VERSION -t $REPOSITORY_URI:latest -t $REPOSITORY_URI:$IMAGE_TAG .
-  echo Build completed on `date`
-}
-
 function configure_local_envs {
-  export LOG_LEVEL=debug
-  export NHS_ENVIRONMENT=local
+  export LOCALSTACK_URL="http://localhost:4566"
+  export AWS_REGION="eu-west-2"
+  export AWS_DEFAULT_REGION="eu-west-2"
+  export S3_BUCKET_NAME="test-bucket"
+  export DYNAMODB_NAME="local-test-db"
+  export DYNAMODB_LOCAL_ENDPOINT="http://localhost:4566"
+  export AWS_ACCESS_KEY_ID="LSIA5678901234567890"
+  export AWS_SECRET_ACCESS_KEY="LSIA5678901234567890"
+  export NHS_ENVIRONMENT="local"
 }
 
-function die_localstack_die {
+function destroy_localstack {
   echo docker processes running: $(docker ps)
 
   DOCKER_CONTAINERS_ON_PORT=$(docker ps --filter publish=4566 -q)
@@ -175,12 +159,12 @@ case "${command}" in
   fetch_utils)
       fetch_redaction_utils
       ;;
-  die_localstack_die)
-      die_localstack_die
+  destroy_localstack)
+      destroy_localstack
       ;;
   build_docker)
       configure_envs
-      dojo "./tasks _build"
+      ./tasks _build
       configure_docker_repository_uri
       fetch_redaction_utils
       build_docker_image
@@ -189,51 +173,51 @@ case "${command}" in
       ;;
   _build)
       rm -rf build/
-      gradle assemble
+      ./gradlew assemble
       ;;
   build)
-      dojo "./tasks _build"
+      ./tasks _build
       ;;
   _test_unit)
-      gradle test
+      ./gradlew test
       ;;
   test_unit)
-      dojo "./tasks _test_unit"
+      ./tasks _test_unit
       ;;
   _test_integration)
-      gradle --info integration
+      ./gradlew --info integration
       ;;
   test_integration)
       configure_envs
-      die_localstack_die
-      dojo -c Dojofile-itest "./tasks _test_integration"
+      destroy_localstack
+      ./tasks _test_integration
       ;;
   dojo_integration)
       configure_envs
-      dojo -c Dojofile-itest "./tasks _test_integration"
+      ./tasks _test_integration
       ;;
   _test_coverage)
-      gradle jacocoTestCoverageVerification
+      ./gradlew jacocoTestCoverageVerification
       ;;
   test_coverage)
       configure_envs
-      die_localstack_die
-      dojo -c Dojofile-itest "./tasks _test_coverage"
+      destroy_localstack
+      ./tasks _test_coverage
       ;;
   _code_quality)
-      gradle check -x test -x integration
+      ./gradlew check -x test -x integration
       ;;
   code_quality)
-      die_localstack_die
-      dojo -c Dojofile-itest "./tasks _code_quality"
+      destroy_localstack
+      ./tasks _code_quality
       ;;
   _test_all)
-      gradle clean test integration jacocoTestCoverageVerification check
+      ./gradlew clean test integration jacocoTestCoverageVerification check
       ;;
   test_all)
       configure_envs
-      die_localstack_die
-      dojo -c Dojofile-itest "./tasks _test_all"
+      destroy_localstack
+      ./tasks _test_all
       ;;
   run_local)
       configure_envs
@@ -249,35 +233,35 @@ case "${command}" in
       ;;
   tf)
       check_env
-      dojo -c Dojofile-infra "./tasks _tf"
+      ./tasks _tf
       ;;
   _tf_plan_suspension)
       export NHS_SERVICE=suspension-service
       _assume_environment_role $NHS_ENVIRONMENT
-      tf_plan "$2"
+      tf_plan $2
       ;;
   tf_plan_suspension)
       export NHS_SERVICE=suspension-service
       check_env
-      dojo -c Dojofile-infra "./tasks _tf_plan $2"
+      ./tasks _tf_plan $2
       ;;
   _tf_plan_transfer)
       export NHS_SERVICE=end-of-transfer-service
       _assume_environment_role $NHS_ENVIRONMENT
-      tf_plan "$2"
+      tf_plan $2
       ;;
   tf_plan_transfer)
       export NHS_SERVICE=end-of-transfer-service
       check_env
-      dojo -c Dojofile-infra "./tasks _tf_plan $2"
+      ./tasks _tf_plan $2
       ;;
   _tf_plan)
       _assume_environment_role $NHS_ENVIRONMENT
-      tf_plan "$2"
+      tf_plan $2
       ;;
   tf_plan)
       check_env
-      dojo -c Dojofile-infra "./tasks _tf_plan $2"
+      ./tasks _tf_plan $2
       ;;
   _tf_apply)
       _assume_environment_role $NHS_ENVIRONMENT
@@ -285,7 +269,7 @@ case "${command}" in
       ;;
   tf_apply)
       check_env
-      dojo -c Dojofile-infra "./tasks _tf_apply"
+      ./tasks _tf_apply
       ;;
   promote_docker_image)
       check_env
@@ -301,17 +285,17 @@ case "${command}" in
       ;;
   wait_ecs)
       check_env
-      dojo -c Dojofile-infra "./tasks _wait_ecs"
+      ./tasks _wait_ecs
       ;;
   _run_sonar)
       ./gradlew build sonar --info
       ;;
   run_sonar)
-      die_localstack_die
+      destroy_localstack
       _assume_environment_role $NHS_ENVIRONMENT
       configure_envs
       configure_sonar_environment_variable
-      dojo -c Dojofile-itest "./tasks _run_sonar"
+      ./tasks _run_sonar
       ;;
   *)
       echo "Invalid command: '${command}'"
