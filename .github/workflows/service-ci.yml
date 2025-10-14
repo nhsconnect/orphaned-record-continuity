@@ -143,6 +143,7 @@ jobs:
       service: pds-adaptor
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
+      java_version: '11'
     secrets: inherit
 
   e2e-testing:
