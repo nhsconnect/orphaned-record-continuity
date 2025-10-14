@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/console.xml"/>
+    <springProperty scope="context" name="environment" source="environment"/>
+    <property resource="application.properties"/>
+    <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp>
+                    <timeZone>UTC</timeZone>
+                </timestamp>
+                <mdc/>
+                <stackTrace/>
+                <pattern>
+                    <omitEmptyFields>true</omitEmptyFields>
+                    <pattern>
+                        {
+                        "level": "%level",
+                        "service": "re-registration-service",
+                        "class": "%C{0}",
+                        "line": "%L",
+                        "message": "%message",
+                        "environment": "${NHS_ENVIRONMENT:-local}"
+                        }
+                    </pattern>
+                </pattern>
+                <arguments>
+                    <includeNonStructuredArguments>true</includeNonStructuredArguments>
+                </arguments>
+            </providers>
+        </encoder>
+
+    </appender>
+    <root level="info">
+        <appender-ref ref="stdout"/>
+    </root>
+</configuration>

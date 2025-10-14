@@ -9,8 +9,12 @@ on:
       - 'services/ehr-repo/**'
       - 'services/mesh-forwarder/**'
       - 'services/ehr-out-service/**'
-      - 'services/ehr-transfer-service/**'
-      - '.github/workflows/service-ci.yml'
+      - 'services/nems-event-processor/**'
+      - 'service/ehr-transfer-service/**'
+      - 'services/pds-adaptor/**'
+      - 'services/re-registration-service/**'
+      - 'services/gp2gp-messenger/**'
+      - 'services/mesh-inbox-s3-forwarder/**'
 
   pull_request:
     types:
@@ -26,6 +30,10 @@ on:
       - 'services/ehr-out-service/**'
       - 'services/nems-event-processor/**'
       - 'service/ehr-transfer-service/**'
+      - 'services/pds-adaptor/**'
+      - 'services/re-registration-service/**'
+      - 'services/gp2gp-messenger/**'
+      - 'services/mesh-inbox-s3-forwarder/**'
       - '.github/workflows/service-ci.yml'
 
 permissions:
@@ -144,6 +152,18 @@ jobs:
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
       java_version: '11'
+    secrets: inherit
+
+  re-registration-service:
+    name: Re-registration Service CI
+    needs: [ get_changed_files]
+    if: contains(needs.get_changed_files.outputs.changed, 'services/re-registration-service') || contains(needs.get_changed_files.outputs.changed, '.github/')
+    uses: './.github/workflows/base-java-service-jobs.yml'
+    with:
+      service: ehr-transfer-service
+      environment: dev
+      is_deployment: ${{ github.ref == 'refs/heads/main' }}
+      requires_localstack: true
     secrets: inherit
 
   e2e-testing:
