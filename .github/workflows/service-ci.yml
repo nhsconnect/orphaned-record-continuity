@@ -119,6 +119,7 @@ jobs:
       service: nems-event-processor
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
+      requires_localstack: true
     secrets: inherit
 
   ehr-transfer-service:
@@ -130,6 +131,7 @@ jobs:
       service: ehr-transfer-service
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
+      requires_localstack: true
     secrets: inherit
 
   pds-adaptor:
