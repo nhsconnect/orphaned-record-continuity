@@ -1,0 +1,95 @@
+{
+    "address": [
+        {
+            "extension": [
+                {
+                    "extension": [
+                        {
+                            "url": "type",
+                            "valueCoding": {
+                                "code": "PAF",
+                                "system": "https://fhir.hl7.org.uk/CodeSystem/UKCore-AddressKeyType"
+                            }
+                        },
+                        {
+                            "url": "value",
+                            "valueString": "19974416"
+                        }
+                    ],
+                    "url": "https://fhir.hl7.org.uk/StructureDefinition/Extension-UKCore-AddressKey"
+                }
+            ],
+            "id": "dBxTY",
+            "line": [
+                "12 AVENUE VIVIAN",
+                "SCUNTHORPE"
+            ],
+            "period": {
+                "start": "2003-11-24"
+            },
+            "postalCode": "DN15 8JW",
+            "use": "home"
+        }
+    ],
+    "birthDate": "1992-01-31",
+    "gender": "male",
+    "id": "9693797493",
+    "identifier": [
+        {
+            "extension": [
+                {
+                    "url": "https://fhir.hl7.org.uk/StructureDefinition/Extension-UKCore-NHSNumberVerificationStatus",
+                    "valueCodeableConcept": {
+                        "coding": [
+                            {
+                                "code": "01",
+                                "display": "Number present and verified",
+                                "system": "https://fhir.hl7.org.uk/CodeSystem/UKCore-NHSNumberVerificationStatus",
+                                "version": "1.0.0"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "system": "https://fhir.nhs.uk/Id/nhs-number",
+            "value": "9693797493"
+        }
+    ],
+    "managingOrganization": {
+        "identifier": {
+            "period": {
+                "start": "2021-12-03"
+            },
+            "system": "https://fhir.nhs.uk/Id/ods-organization-code",
+            "value": "A1234"
+        },
+        "type": "Organization"
+    },
+    "meta": {
+        "security": [
+            {
+                "code": "U",
+                "display": "unrestricted",
+                "system": "http://terminology.hl7.org/CodeSystem/v3-Confidentiality"
+            }
+        ],
+        "versionId": "6"
+    },
+    "name": [
+        {
+            "family": "SPARKS",
+            "given": [
+                "John"
+            ],
+            "id": "pYssk",
+            "period": {
+                "start": "2010-01-10"
+            },
+            "prefix": [
+                "MR"
+            ],
+            "use": "usual"
+        }
+    ],
+    "resourceType": "Patient"
+}

@@ -1,29 +1,6 @@
 name: Base Python Services Build and Deploy
 
 on:
-  workflow_dispatch:
-    inputs:
-      environment:
-        type: choice
-        options:
-          - dev
-          - pre-prod
-          - prod
-        required: true
-        default: dev
-        description: Which environment to build and deploy to?
-      service:
-        type: choice
-        options:
-          - mesh-forwarder
-        required: true
-        description: Which service to build and deploy
-      is_deployment:
-        type: boolean
-        default: false
-        description: Whether to deploy of not
-        required: true
-
   workflow_call:
     inputs:
       environment:

@@ -1,0 +1,142 @@
+#!/usr/bin/env bash
+
+set -Eeo pipefail
+
+###########################
+# Local Config Parameters #
+###########################
+
+AWS_DEFAULT_REGION=eu-west-2
+IMAGE_REPO_NAME=deductions/pds-adaptor
+export NHS_SERVICE=pds-adaptor
+AWS_HELPERS_VERSION=0.2.27
+echo "AWS helper scripts version: $AWS_HELPERS_VERSION"
+
+function configure_local_envs {
+  export LOG_LEVEL=debug
+  export NHS_ENVIRONMENT=local
+}
+
+function configure_local_run_against_aws_env {
+  export NHS_ENVIRONMENT=${NHS_ENVIRONMENT}
+  export JWT_PRIVATE_KEY=$(_get_aws_ssm_secret "/repo/${NHS_ENVIRONMENT}/user-input/external/pds-adaptor-jwt-private-key")
+  export JWT_API_KEY=$(_get_aws_ssm_secret "/repo/${NHS_ENVIRONMENT}/user-input/external/pds-adaptor-jwt-api-key")
+  export JWT_KEY_ID=$(_get_aws_ssm_secret "/repo/${NHS_ENVIRONMENT}/user-input/external/pds-adaptor-jwt-key-id")
+  export ACCESS_TOKEN_ENDPOINT=$(_get_aws_ssm_secret "/repo/${NHS_ENVIRONMENT}/user-input/external/pds-adaptor-access-token-endpoint")
+  export PDS_FHIR_ENDPOINT=$(_get_aws_ssm_secret "/repo/${NHS_ENVIRONMENT}/user-input/external/pds-fhir-endpoint")
+}
+
+###########
+## TASKS ##
+###########
+
+command="$1"
+case "${command}" in
+  _build)
+      rm -rf build/
+      ./gradlew build -x integration
+      ;;
+  build)
+      ./tasks _build
+      ;;
+  _test_unit)
+      ./gradlew test
+      ;;
+  test_unit)
+      configure_local_envs
+      ./tasks _test_unit
+      ;;
+  test_unit_cached)
+      configure_local_envs
+      ./tasks _test_unit
+      ;;
+  _test_integration)
+      ./gradlew --info integration
+      ;;
+  test_integration)
+      configure_local_envs
+      ./tasks _test_integration
+      ;;
+  _test_performance)
+        _assume_environment_role $NHS_ENVIRONMENT
+        test_performance
+        ;;
+  test_performance)
+        check_env
+        ./tasks _test_performance
+        ;;
+  _test_coverage)
+      ./gradlew jacocoTestCoverageVerification
+      ;;
+  test_coverage)
+      configure_local_envs
+      ./tasks _test_coverage
+      ;;
+  _code_quality)
+      ./gradlew check -x test -x integration
+      ;;
+  code_quality)
+      configure_local_envs
+      ./tasks _code_quality
+      ;;
+  _test_all)
+    ./gradlew test integration jacocoTestCoverageVerification check
+    ;;
+  test_all)
+    configure_local_envs
+    ./tasks _test_all
+    ;;
+  run_local)
+    configure_local_envs
+    ./gradlew bootRun
+    ;;
+  run_local_against_aws_env)
+    configure_local_run_against_aws_env
+    ./gradlew bootRun
+    ;;
+  tf)
+      check_env
+      ./tasks _tf
+      ;;
+  _tf)
+      tf_init
+      bash
+      ;;
+  _tf_plan)
+      _assume_environment_role $NHS_ENVIRONMENT
+      tf_plan "$2"
+      ;;
+  tf_plan)
+      check_env
+      ./tasks _tf_plan $2
+      ;;
+  _tf_apply)
+      _assume_environment_role $NHS_ENVIRONMENT
+      tf_apply
+      ;;
+  tf_apply)
+      check_env
+      ./tasks _tf_apply
+      ;;
+  promote_docker_image)
+      check_env
+      set_image_tag
+      promote_docker_image "$IMAGE_REPO_NAME:$IMAGE_TAG" "$NHS_ENVIRONMENT"
+      ;;
+  _wait_ecs)
+      _assume_environment_role $NHS_ENVIRONMENT
+      aws ecs wait services-stable \
+        --region $AWS_DEFAULT_REGION \
+        --cluster $NHS_ENVIRONMENT-${NHS_SERVICE}-ecs-cluster \
+        --service $NHS_ENVIRONMENT-${NHS_SERVICE}-service
+      ;;
+  wait_ecs)
+      check_env
+      ./tasks _wait_ecs
+      ;;
+  *)
+      echo "Invalid command: '${command}'"
+      exit 1
+      ;;
+esac
+set +e

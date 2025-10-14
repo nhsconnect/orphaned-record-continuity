@@ -1,31 +1,6 @@
 name: Base Java Services Build and Deploy
 
 on:
-  workflow_dispatch:
-    inputs:
-      environment:
-        type: choice
-        options:
-          - dev
-          - pre-prod
-          - prod
-        required: true
-        default: dev
-        description: Which environment to build and deploy to?
-      service:
-        type: choice
-        options:
-          - nems-event-processor
-          - ehr-transfer-service
-
-        required: true
-        description: Which service to build and deploy
-      is_deployment:
-        type: boolean
-        default: false
-        description: Whether to deploy of not
-        required: true
-
   workflow_call:
     inputs:
       environment:
@@ -39,6 +14,13 @@ on:
         type: boolean
         default: false
         required: true
+      requires_localstack:
+        type: boolean
+        default: false
+      java_version:
+        type: string
+        default: '21'
+        required: false
 
 permissions:
   pull-requests: write
@@ -56,14 +38,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         
-      - name: Set up JDK 21
+      - name: Set up JDK ${{ inputs.java_version }}
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '21'
+          java-version: '${{ inputs.java_version }}'
           cache: gradle
 
       - name: Run Localstack on Docker
+        if: ${{ inputs.requires_localstack }}
         run: docker compose -f docker-compose.localstack-local.yaml up -d
 
       - name: Grant execute permission for gradlew
@@ -84,11 +67,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Set up JDK 21
+      - name: Set up JDK ${{ inputs.java_version }}
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '21'
+          java-version: '${{ inputs.java_version }}'
           cache: gradle
 
       - name: Configure AWS Credentials (Read/Write)

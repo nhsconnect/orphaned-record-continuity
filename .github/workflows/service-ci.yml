@@ -119,6 +119,7 @@ jobs:
       service: nems-event-processor
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
+      requires_localstack: true
     secrets: inherit
 
   ehr-transfer-service:
@@ -130,6 +131,19 @@ jobs:
       service: ehr-transfer-service
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
+      requires_localstack: true
+    secrets: inherit
+
+  pds-adaptor:
+    name: PDS Adaptor CI
+    needs: [ get_changed_files ]
+    if: contains(needs.get_changed_files.outputs.changed, 'services/pds-adaptor') || contains(needs.get_changed_files.outputs.changed, '.github/')
+    uses: './.github/workflows/base-java-service-jobs.yml'
+    with:
+      service: pds-adaptor
+      environment: dev
+      is_deployment: ${{ github.ref == 'refs/heads/main' }}
+      java_version: '11'
     secrets: inherit
 
   e2e-testing:

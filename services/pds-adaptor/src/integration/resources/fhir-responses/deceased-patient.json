@@ -1,0 +1,133 @@
+{
+  "address": [
+    {
+      "extension": [
+        {
+          "extension": [
+            {
+              "url": "type",
+              "valueCoding": {
+                "code": "PAF",
+                "system": "https://fhir.hl7.org.uk/CodeSystem/UKCore-AddressKeyType"
+              }
+            },
+            {
+              "url": "value",
+              "valueString": "5901640"
+            }
+          ],
+          "url": "https://fhir.hl7.org.uk/StructureDefinition/Extension-UKCore-AddressKey"
+        }
+      ],
+      "id": "HwQJS",
+      "line": [
+        "10 CRECY CLOSE",
+        "DERBY"
+      ],
+      "period": {
+        "start": "2010-06-29"
+      },
+      "postalCode": "DE22 3JU",
+      "use": "home"
+    }
+  ],
+  "birthDate": "1977-03-27",
+  "deceasedDateTime": "2010-06-28T00:00:00+00:00",
+  "extension": [
+    {
+      "extension": [
+        {
+          "url": "deathNotificationStatus",
+          "valueCodeableConcept": {
+            "coding": [
+              {
+                "code": "2",
+                "display": "Formal - death notice received from Registrar of Deaths",
+                "system": "https://fhir.hl7.org.uk/CodeSystem/UKCore-DeathNotificationStatus",
+                "version": "1.0.0"
+              }
+            ]
+          }
+        },
+        {
+          "url": "systemEffectiveDate",
+          "valueDateTime": "2013-05-23T00:00:00+00:00"
+        }
+      ],
+      "url": "https://fhir.hl7.org.uk/StructureDefinition/Extension-UKCore-DeathNotificationStatus"
+    },
+    {
+      "url": "https://fhir.hl7.org.uk/StructureDefinition/Extension-UKCore-NominatedPharmacy",
+      "valueReference": {
+        "identifier": {
+          "system": "https://fhir.nhs.uk/Id/ods-organization-code",
+          "value": "FL015"
+        }
+      }
+    }
+  ],
+  "gender": "unknown",
+  "generalPractitioner": [
+    {
+      "id": "mvtpt",
+      "identifier": {
+        "period": {
+          "start": "1983-03-01"
+        },
+        "system": "https://fhir.nhs.uk/Id/ods-organization-code",
+        "value": "D81015"
+      },
+      "type": "Organization"
+    }
+  ],
+  "id": "9453740586",
+  "identifier": [
+    {
+      "extension": [
+        {
+          "url": "https://fhir.hl7.org.uk/StructureDefinition/Extension-UKCore-NHSNumberVerificationStatus",
+          "valueCodeableConcept": {
+            "coding": [
+              {
+                "code": "01",
+                "display": "Number present and verified",
+                "system": "https://fhir.hl7.org.uk/CodeSystem/UKCore-NHSNumberVerificationStatus",
+                "version": "1.0.0"
+              }
+            ]
+          }
+        }
+      ],
+      "system": "https://fhir.nhs.uk/Id/nhs-number",
+      "value": "9453740586"
+    }
+  ],
+  "meta": {
+    "security": [
+      {
+        "code": "U",
+        "display": "unrestricted",
+        "system": "http://terminology.hl7.org/CodeSystem/v3-Confidentiality"
+      }
+    ],
+    "versionId": "2"
+  },
+  "name": [
+    {
+      "family": "PENSON",
+      "given": [
+        "HEADLEY",
+        "TED"
+      ],
+      "id": "JtUky",
+      "period": {
+        "start": "1994-08-23"
+      },
+      "prefix": [
+        "MR"
+      ],
+      "use": "usual"
+    }
+  ],
+  "resourceType": "Patient"
+}
