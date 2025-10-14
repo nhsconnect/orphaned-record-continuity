@@ -2,14 +2,14 @@ services:
   localstack:
     container_name: "localstack-suspension-service"
     image: localstack/localstack
-    network_mode: bridge
     ports:
-      - "127.0.0.1:4588:4588"
+      - "4566:4566"
+    network_mode: bridge
     environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
       - SERVICES=sqs,sns,dynamodb
-      - DEFAULT_REGION=eu-west-2
-      - HOSTNAME_EXTERNAL=localhost
-      - EDGE_PORT=4588
+      - GATEWAY_LISTEN=4566
     volumes:
-      - "${TMPDIR:-/tmp}/localstack:/tmp/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
