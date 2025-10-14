@@ -1,0 +1,2 @@
+DOJO_DOCKER_IMAGE="nhsdev/openjdk-dojo:f2bf1067b61070238de55d4e22d371a067bc879f"
+DOJO_DOCKER_OPTIONS="-v $GRADLE_RO_DEP_CACHE:/.gradle-readonly-cache:ro -e GRADLE_RO_DEP_CACHE=/.gradle-readonly-cache"

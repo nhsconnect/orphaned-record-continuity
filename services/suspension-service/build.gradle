@@ -31,7 +31,6 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-json'
 
     implementation 'org.yaml:snakeyaml:2.2'
-
     implementation('io.netty:netty-buffer') { version { strictly '4.1.104.Final' } }
     implementation('io.netty:netty-codec') { version { strictly '4.1.104.Final' } }
     implementation('io.netty:netty-codec-http') { version { strictly '4.1.104.Final' } }

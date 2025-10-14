@@ -12,8 +12,6 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import software.amazon.awssdk.services.cloudwatch.CloudWatchClient;
 import software.amazon.awssdk.services.cloudwatch.model.*;
-import uk.nhs.prm.repo.suspension.service.config.SnsClientSpringConfiguration;
-import uk.nhs.prm.repo.suspension.service.config.SqsClientSpringConfiguration;
 import uk.nhs.prm.repo.suspension.service.infra.LocalStackAwsConfig;
 
 import java.time.Instant;
