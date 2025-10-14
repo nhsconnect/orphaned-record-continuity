@@ -141,8 +141,9 @@ function configure_local_envs {
   export AWS_SECRET_ACCESS_KEY="LSIA5678901234567890"
   export NHS_ENVIRONMENT="local"
 }
-function   run_localstack_local {
-  docker-compose -f docker-compose.localstack-local.yaml up -d
+
+function run_localstack_local {
+  docker compose -f docker-compose.localstack-local.yaml up -d
 }
 
 function destroy_localstack {
@@ -226,8 +227,6 @@ case "${command}" in
       ;;
   test_all)
       configure_envs
-      destroy_localstack
-      run_localstack_local
       ./tasks _test_all
       ;;
   run_local)
