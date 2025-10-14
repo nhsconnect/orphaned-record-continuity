@@ -146,6 +146,18 @@ jobs:
       java_version: '11'
     secrets: inherit
 
+  re-registration-service:
+    name: Re-registration Service CI
+    needs: [ get_changed_files]
+    if: contains(needs.get_changed_files.outputs.changed, 'services/re-registration-service') || contains(needs.get_changed_files.outputs.changed, '.github/')
+    uses: './.github/workflows/base-java-service-jobs.yml'
+    with:
+      service: ehr-transfer-service
+      environment: dev
+      is_deployment: ${{ github.ref == 'refs/heads/main' }}
+      requires_localstack: true
+    secrets: inherit
+
   e2e-testing:
     name: End to End
     if: ${{ vars.E2E_TESTS_ENABLED == 'true' && success() }}
