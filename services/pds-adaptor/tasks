@@ -12,57 +12,6 @@ export NHS_SERVICE=pds-adaptor
 AWS_HELPERS_VERSION=0.2.27
 echo "AWS helper scripts version: $AWS_HELPERS_VERSION"
 
-
-###########################
-# Shared utils            #
-###########################
-
-function download_util() {
-  local UTIL_VERSION=$1
-  local UTIL_FILENAME=$2
-
-  local UTIL_FILEPATH="utils/$UTIL_VERSION/$UTIL_FILENAME"
-
-  mkdir -p "utils/$UTIL_VERSION"
-  if [[ ! -f $UTIL_FILEPATH ]];then
-    wget --quiet -O $UTIL_FILEPATH https://github.com/nhsconnect/prm-deductions-support-infra/releases/download/${UTIL_VERSION}/${UTIL_FILENAME}
-  fi
-  chmod +x $UTIL_FILEPATH
-
-  echo "$UTIL_FILEPATH"
-}
-
-function fetch_redaction_utils() {
-  download_util $AWS_HELPERS_VERSION run-with-redaction.sh
-  download_util $AWS_HELPERS_VERSION redactor
-}
-
-AWS_HELPERS_FILE=$(download_util $AWS_HELPERS_VERSION aws-helpers)
-source $AWS_HELPERS_FILE
-
-####################################
-# Instance (Environment) Variables #
-####################################
-
-function check_env {
-  if [[ -z "${NHS_ENVIRONMENT}" ]]; then
-    echo "Must set NHS_ENVIRONMENT"
-    exit 1
-  fi
-}
-
-function set_image_tag() {
-  if [[ -z "${GO_DEPENDENCY_LABEL_APP}" ]]; then
-    export IMAGE_TAG=${GO_PIPELINE_LABEL:-$(git rev-parse HEAD | cut -c 1-8)}
-  else
-    export IMAGE_TAG=${GO_DEPENDENCY_LABEL_APP}
-  fi
-}
-
-function get_aws_account_id {
-    AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account")
-}
-
 function configure_local_envs {
   export LOG_LEVEL=debug
   export NHS_ENVIRONMENT=local
@@ -77,45 +26,6 @@ function configure_local_run_against_aws_env {
   export PDS_FHIR_ENDPOINT=$(_get_aws_ssm_secret "/repo/${NHS_ENVIRONMENT}/user-input/external/pds-fhir-endpoint")
 }
 
-#######################
-# Terraform Functions #
-#######################
-
-function tf_init {
-  check_env
-  cd terraform
-
-  terraform init -reconfigure \
-    -backend-config key="${NHS_SERVICE}-${NHS_ENVIRONMENT}/terraform.tfstate" \
-    -backend-config bucket="prm-deductions-${NHS_ENVIRONMENT}-terraform-state" \
-    -backend-config dynamodb_table="prm-deductions-${NHS_ENVIRONMENT}-terraform-table" \
-    -backend-config region=${AWS_DEFAULT_REGION}
-}
-
-function tf_plan {
-  operation=$1
-
-  set_image_tag
-
-  tf_init
-
-  terraform get # modules
-  if [[ "${operation}" == "create" ]]; then
-    terraform plan -var task_image_tag=$IMAGE_TAG -var-file=$NHS_ENVIRONMENT.tfvars -out="nhs_deployment.tfplan"
-  elif [[ "${operation}" == "destroy" ]]; then
-    terraform plan -var task_image_tag=$IMAGE_TAG -var-file=$NHS_ENVIRONMENT.tfvars -out="nhs_deployment.tfplan" -destroy
-  else
-    echo "Unknown operation (should be create or destroy), got: ${operation}"
-    exit 1
-  fi
-}
-
-function tf_apply {
-  tf_init
-  terraform get # modules
-  terraform apply nhs_deployment.tfplan
-  terraform output -json > tf-out.json
-}
 
 ############################
 # Docker Related Functions #
