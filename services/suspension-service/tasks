@@ -1,0 +1,321 @@
+#!/usr/bin/env bash
+
+set -Eeo pipefail
+
+###########################
+# Local Config Parameters #
+###########################
+
+AWS_DEFAULT_REGION=eu-west-2
+IMAGE_REPO_NAME=repo/suspension-service
+AWS_HELPERS_VERSION=0.2.27
+echo "AWS helper scripts version: $AWS_HELPERS_VERSION"
+
+###########################
+# Shared utils            #
+###########################
+
+function download_util() {
+  local UTIL_VERSION=$1
+  local UTIL_FILENAME=$2
+
+  local UTIL_FILEPATH="utils/$UTIL_VERSION/$UTIL_FILENAME"
+
+  mkdir -p "utils/$UTIL_VERSION"
+  if [[ ! -f $UTIL_FILEPATH ]];then
+    wget --quiet -O $UTIL_FILEPATH https://github.com/nhsconnect/prm-deductions-support-infra/releases/download/${UTIL_VERSION}/${UTIL_FILENAME}
+  fi
+  chmod +x $UTIL_FILEPATH
+
+  echo "$UTIL_FILEPATH"
+}
+
+function fetch_redaction_utils() {
+  download_util $AWS_HELPERS_VERSION run-with-redaction.sh
+  download_util $AWS_HELPERS_VERSION redactor
+}
+
+AWS_HELPERS_FILE="utils/$AWS_HELPERS_VERSION/aws-helpers"
+
+mkdir -p "utils/$AWS_HELPERS_VERSION"
+if [[ ! -f $AWS_HELPERS_FILE ]];then
+  wget --quiet -O $AWS_HELPERS_FILE https://github.com/nhsconnect/prm-deductions-support-infra/releases/download/${AWS_HELPERS_VERSION}/aws-helpers
+fi
+chmod +x $AWS_HELPERS_FILE
+source $AWS_HELPERS_FILE
+
+####################################
+# Instance (Environment) Variables #
+####################################
+
+function check_env {
+  if [[ -z "${NHS_ENVIRONMENT}" ]]; then
+    echo "Must set NHS_ENVIRONMENT"
+    exit 1
+  fi
+
+  if [[ -z "${NHS_SERVICE}" ]]; then
+    echo "Must set NHS_SERVICE"
+    exit 1
+  fi
+}
+
+function set_image_tag() {
+  if [[ -z "${GO_DEPENDENCY_LABEL_APP}" ]]; then
+    export IMAGE_TAG=${GO_PIPELINE_LABEL:-$(git rev-parse HEAD | cut -c 1-8)}
+  else
+    export IMAGE_TAG=${GO_DEPENDENCY_LABEL_APP}
+  fi
+}
+
+function get_aws_account_id {
+    AWS_ACCOUNT_ID=$(dojo -c Dojofile-infra "aws sts get-caller-identity | jq -r .Account")
+}
+
+function configure_envs {
+  export AWS_REGION=${AWS_DEFAULT_REGION}
+  export LOCALSTACK_URL="http://localstack:4566"
+}
+
+function configure_sonar_environment_variable {
+  export SONAR_TOKEN=$(_get_aws_ssm_secret "/repo/dev/output/suspensions-service/sonar_token")
+}
+
+#######################
+# Terraform Functions #
+#######################
+
+function tf_init {
+  check_env
+  cd terraform
+
+  terraform init -reconfigure \
+    -backend-config key="${NHS_SERVICE}-${NHS_ENVIRONMENT}/terraform.tfstate" \
+    -backend-config bucket="prm-deductions-${NHS_ENVIRONMENT}-terraform-state" \
+    -backend-config dynamodb_table="prm-deductions-${NHS_ENVIRONMENT}-terraform-table" \
+    -backend-config region=${AWS_DEFAULT_REGION}
+}
+
+function tf_plan {
+  operation=$1
+
+  if [[ -z "${IMAGE_TAG}" ]]; then
+    set_image_tag
+  fi
+
+  tf_init
+
+  terraform get # modules
+  if [[ "${operation}" == "create" ]]; then
+    terraform plan -var task_image_tag=$IMAGE_TAG -var-file="configs/${NHS_SERVICE}/${NHS_SERVICE}.tfvars" -var-file="configs/${NHS_SERVICE}/$NHS_ENVIRONMENT.tfvars" -out="${NHS_SERVICE}.tfplan"
+  elif [[ "${operation}" == "destroy" ]]; then
+    terraform plan -var task_image_tag=$IMAGE_TAG -var-file="configs/${NHS_SERVICE}/${NHS_SERVICE}.tfvars" -var-file="configs/${NHS_SERVICE}/$NHS_ENVIRONMENT.tfvars" -out="${NHS_SERVICE}.tfplan" -destroy
+  else
+    echo "Unknown operation (should be create or destroy), got: ${operation}"
+    exit 1
+  fi
+}
+
+function tf_apply {
+  tf_init
+  terraform get # modules
+  terraform apply ${NHS_SERVICE}.tfplan
+  terraform output -json > tf-out.json
+}
+
+############################
+# Docker Related Functions #
+############################
+
+function docker_login {
+  echo Logging in to Amazon ECR...
+  eval $(dojo -c Dojofile-infra "aws ecr get-login --no-include-email --region $AWS_DEFAULT_REGION")
+}
+
+function configure_docker_repository_uri {
+  docker_login
+  get_aws_account_id
+  export REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/$IMAGE_REPO_NAME
+}
+
+function build_docker_image() {
+  echo Build started on $(date)
+  set_image_tag
+  echo Building the Docker image...
+  docker build --build-arg UTILS_VERSION=$AWS_HELPERS_VERSION -t $REPOSITORY_URI:latest -t $REPOSITORY_URI:$IMAGE_TAG .
+  echo Build completed on `date`
+}
+
+function configure_local_envs {
+  export LOG_LEVEL=debug
+  export NHS_ENVIRONMENT=local
+}
+
+function die_localstack_die {
+  echo docker processes running: $(docker ps)
+
+  DOCKER_CONTAINERS_ON_PORT=$(docker ps --filter publish=4566 -q)
+
+  echo docker processes running on expected localstack port: $DOCKER_CONTAINERS_ON_PORT
+
+  if [ -z "$DOCKER_CONTAINERS_ON_PORT" ]; then
+    echo no localstack nonsense going on, cool
+  else
+    echo trying to kill localstack...
+    docker stop $DOCKER_CONTAINERS_ON_PORT
+  fi
+}
+
+###########
+## TASKS ##
+###########
+
+command="$1"
+case "${command}" in
+  fetch_utils)
+      fetch_redaction_utils
+      ;;
+  die_localstack_die)
+      die_localstack_die
+      ;;
+  build_docker)
+      configure_envs
+      dojo "./tasks _build"
+      configure_docker_repository_uri
+      fetch_redaction_utils
+      build_docker_image
+      echo "Pushing the Docker image... $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG"
+      docker push $REPOSITORY_URI:$IMAGE_TAG
+      ;;
+  _build)
+      rm -rf build/
+      gradle assemble
+      ;;
+  build)
+      dojo "./tasks _build"
+      ;;
+  _test_unit)
+      gradle test
+      ;;
+  test_unit)
+      dojo "./tasks _test_unit"
+      ;;
+  _test_integration)
+      gradle --info integration
+      ;;
+  test_integration)
+      configure_envs
+      die_localstack_die
+      dojo -c Dojofile-itest "./tasks _test_integration"
+      ;;
+  dojo_integration)
+      configure_envs
+      dojo -c Dojofile-itest "./tasks _test_integration"
+      ;;
+  _test_coverage)
+      gradle jacocoTestCoverageVerification
+      ;;
+  test_coverage)
+      configure_envs
+      die_localstack_die
+      dojo -c Dojofile-itest "./tasks _test_coverage"
+      ;;
+  _code_quality)
+      gradle check -x test -x integration
+      ;;
+  code_quality)
+      die_localstack_die
+      dojo -c Dojofile-itest "./tasks _code_quality"
+      ;;
+  _test_all)
+      gradle clean test integration jacocoTestCoverageVerification check
+      ;;
+  test_all)
+      configure_envs
+      die_localstack_die
+      dojo -c Dojofile-itest "./tasks _test_all"
+      ;;
+  run_local)
+      configure_envs
+      ./gradlew bootRun
+      ;;
+  run_localstack_local)
+      docker-compose -f docker-compose.localstack-local.yaml up -d
+      ;;
+  _tf)
+      _assume_environment_role $NHS_ENVIRONMENT
+      tf_init
+      bash
+      ;;
+  tf)
+      check_env
+      dojo -c Dojofile-infra "./tasks _tf"
+      ;;
+  _tf_plan_suspension)
+      export NHS_SERVICE=suspension-service
+      _assume_environment_role $NHS_ENVIRONMENT
+      tf_plan "$2"
+      ;;
+  tf_plan_suspension)
+      export NHS_SERVICE=suspension-service
+      check_env
+      dojo -c Dojofile-infra "./tasks _tf_plan $2"
+      ;;
+  _tf_plan_transfer)
+      export NHS_SERVICE=end-of-transfer-service
+      _assume_environment_role $NHS_ENVIRONMENT
+      tf_plan "$2"
+      ;;
+  tf_plan_transfer)
+      export NHS_SERVICE=end-of-transfer-service
+      check_env
+      dojo -c Dojofile-infra "./tasks _tf_plan $2"
+      ;;
+  _tf_plan)
+      _assume_environment_role $NHS_ENVIRONMENT
+      tf_plan "$2"
+      ;;
+  tf_plan)
+      check_env
+      dojo -c Dojofile-infra "./tasks _tf_plan $2"
+      ;;
+  _tf_apply)
+      _assume_environment_role $NHS_ENVIRONMENT
+      tf_apply
+      ;;
+  tf_apply)
+      check_env
+      dojo -c Dojofile-infra "./tasks _tf_apply"
+      ;;
+  promote_docker_image)
+      check_env
+      set_image_tag
+      promote_docker_image "$IMAGE_REPO_NAME:$IMAGE_TAG" "$NHS_ENVIRONMENT"
+      ;;
+  _wait_ecs)
+      _assume_environment_role $NHS_ENVIRONMENT
+      aws ecs wait services-stable \
+        --region $AWS_DEFAULT_REGION \
+        --cluster $NHS_ENVIRONMENT-${NHS_SERVICE}-ecs-cluster \
+        --service $NHS_ENVIRONMENT-${NHS_SERVICE}
+      ;;
+  wait_ecs)
+      check_env
+      dojo -c Dojofile-infra "./tasks _wait_ecs"
+      ;;
+  _run_sonar)
+      ./gradlew build sonar --info
+      ;;
+  run_sonar)
+      die_localstack_die
+      _assume_environment_role $NHS_ENVIRONMENT
+      configure_envs
+      configure_sonar_environment_variable
+      dojo -c Dojofile-itest "./tasks _run_sonar"
+      ;;
+  *)
+      echo "Invalid command: '${command}'"
+      exit 1
+      ;;
+esac
+set +e
