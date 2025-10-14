@@ -55,7 +55,7 @@ public class MetricPublisherIntegrationTest {
             assertThat(metricData[0].values()).isNotEmpty();
         });
         assertThat(metricData[0].values()).isNotEmpty();
-        assertThat(metricData[0].values().get(1)).isEqualTo(HEALTHY_HEALTH_VALUE);
+        assertThat(metricData[0].values().get(0)).isEqualTo(HEALTHY_HEALTH_VALUE);
     }
 
     private Predicate<Metric> metricHasDimension(String name, String value) {
