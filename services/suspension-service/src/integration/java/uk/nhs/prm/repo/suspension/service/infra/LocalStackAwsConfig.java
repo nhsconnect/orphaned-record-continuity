@@ -10,9 +10,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.cloudwatch.CloudWatchClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.*;
 import software.amazon.awssdk.services.dynamodb.waiters.DynamoDbWaiter;
@@ -74,7 +77,7 @@ public class LocalStackAwsConfig {
     @Bean
     public static AmazonSQSAsync amazonSQSAsync(@Value("${localstack.url}") String localstackUrl) {
         return AmazonSQSAsyncClientBuilder.standard()
-                .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("FAKE", "FAKE")))
+                .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("LSIA5678901234567890", "LSIA5678901234567890")))
                 .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(localstackUrl, "eu-west-2"))
                 .build();
     }
@@ -87,12 +90,12 @@ public class LocalStackAwsConfig {
                 .credentialsProvider(StaticCredentialsProvider.create(new AwsCredentials() {
                     @Override
                     public String accessKeyId() {
-                        return "FAKE";
+                        return "LSIA5678901234567890";
                     }
 
                     @Override
                     public String secretAccessKey() {
-                        return "FAKE";
+                        return "LSIA5678901234567890";
                     }
                 }))
                 .build();
@@ -107,14 +110,24 @@ public class LocalStackAwsConfig {
                         StaticCredentialsProvider.create(new AwsCredentials() {
                             @Override
                             public String accessKeyId() {
-                                return "FAKE";
+                                return "LSIA5678901234567890";
                             }
 
                             @Override
                             public String secretAccessKey() {
-                                return "FAKE";
+                                return "LSIA5678901234567890";
                             }
                         }))
+                .build();
+    }
+
+    @Bean
+    @Primary
+    public static CloudWatchClient cloudwatchClient(@Value("${localstack.url}") String localstackUrl) {
+        return CloudWatchClient.builder()
+                .endpointOverride(URI.create(localstackUrl))
+                .region(Region.EU_WEST_2)
+                .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("LSIAQAAAAAAVNCBMPNSG", "LSIAQAAAAAAVNCBMPNSG")))
                 .build();
     }
 

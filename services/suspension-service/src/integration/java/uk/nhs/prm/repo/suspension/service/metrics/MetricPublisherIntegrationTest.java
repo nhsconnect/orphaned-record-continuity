@@ -14,6 +14,7 @@ import software.amazon.awssdk.services.cloudwatch.CloudWatchClient;
 import software.amazon.awssdk.services.cloudwatch.model.*;
 import uk.nhs.prm.repo.suspension.service.config.SnsClientSpringConfiguration;
 import uk.nhs.prm.repo.suspension.service.config.SqsClientSpringConfiguration;
+import uk.nhs.prm.repo.suspension.service.infra.LocalStackAwsConfig;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -28,32 +29,33 @@ import static org.awaitility.Awaitility.await;
 @SpringBootTest()
 @ActiveProfiles("test")
 @SpringJUnitConfig(TestSpringConfiguration.class)
-@TestPropertySource(properties = {"environment = integration_test", "metricNamespace = SuspensionService"})
+@TestPropertySource(properties = {"environment = local", "metricNamespace = SuspensionService"})
 @ExtendWith(MockitoExtension.class)
-@ContextConfiguration(classes = {SnsClientSpringConfiguration.class, SqsClientSpringConfiguration.class, MetricPublisher.class, AppConfig.class})
+@ContextConfiguration(classes = {LocalStackAwsConfig.class})
 @DirtiesContext
 public class MetricPublisherIntegrationTest {
 
     @Autowired
     private MetricPublisher publisher;
 
-    private final CloudWatchClient cloudWatchClient = CloudWatchClient.create();
+    @Autowired
+    private CloudWatchClient cloudWatchClient;
+
     static final double HEALTHY_HEALTH_VALUE = 1.0;
 
     @Test
     void shouldPutHealthMetricDataIntoCloudWatch() {
         publisher.publishMetric("Health", HEALTHY_HEALTH_VALUE);
+        List<Metric> metrics = fetchMetricsMatching("SuspensionService", "Health");
+        assertThat(metrics).isNotEmpty();
 
+        final MetricDataResult[] metricData = new MetricDataResult[1];
         await().atMost(60, TimeUnit.SECONDS).untilAsserted(() -> {
-            List<Metric> metrics = fetchMetricsMatching("SuspensionService", "Health");
-            assertThat(metrics).isNotEmpty();
-
-            final MetricDataResult[] metricData = new MetricDataResult[1];
-            metricData[0] = fetchRecentMetricData(2, getMetricWhere(metrics, metricHasDimension("Environment", "integration_test")));
+            metricData[0] = fetchRecentMetricData(2, getMetricWhere(metrics, metricHasDimension("Environment", "local")));
             assertThat(metricData[0].values()).isNotEmpty();
-            assertThat(metricData[0].values().get(0)).isEqualTo(HEALTHY_HEALTH_VALUE);
         });
-
+        assertThat(metricData[0].values()).isNotEmpty();
+        assertThat(metricData[0].values().get(1)).isEqualTo(HEALTHY_HEALTH_VALUE);
     }
 
     private Predicate<Metric> metricHasDimension(String name, String value) {
