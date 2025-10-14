@@ -9,8 +9,12 @@ on:
       - 'services/ehr-repo/**'
       - 'services/mesh-forwarder/**'
       - 'services/ehr-out-service/**'
-      - 'services/ehr-transfer-service/**'
-      - '.github/workflows/service-ci.yml'
+      - 'services/nems-event-processor/**'
+      - 'service/ehr-transfer-service/**'
+      - 'services/pds-adaptor/**'
+      - 'services/re-registration-service/**'
+      - 'services/gp2gp-messenger/**'
+      - 'services/mesh-inbox-s3-forwarder/**'
 
   pull_request:
     types:
@@ -26,6 +30,10 @@ on:
       - 'services/ehr-out-service/**'
       - 'services/nems-event-processor/**'
       - 'service/ehr-transfer-service/**'
+      - 'services/pds-adaptor/**'
+      - 'services/re-registration-service/**'
+      - 'services/gp2gp-messenger/**'
+      - 'services/mesh-inbox-s3-forwarder/**'
       - '.github/workflows/service-ci.yml'
 
 permissions:
