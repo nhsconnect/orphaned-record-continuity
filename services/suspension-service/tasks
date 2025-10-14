@@ -200,7 +200,6 @@ case "${command}" in
       ;;
   test_integration)
       configure_envs
-      destroy_localstack
       ./tasks _test_integration
       ;;
   dojo_integration)
