@@ -72,7 +72,7 @@ case "${command}" in
       ;;
   test_all)
       configure_local_envs
-      ./gradlew test integration jacocoTestCoverageVerification check
+      ./gradlew clean test integration jacocoTestCoverageVerification check
       ;;
   run_local)
       configure_local_envs

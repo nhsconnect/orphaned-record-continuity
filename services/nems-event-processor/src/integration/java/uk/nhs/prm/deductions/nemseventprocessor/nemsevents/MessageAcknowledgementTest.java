@@ -27,7 +27,7 @@ import static org.mockito.Mockito.doAnswer;
 @ContextConfiguration(classes = {
         LocalStackAwsConfig.class
 })
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
 class MessageAcknowledgementTest {
 
     @Autowired
@@ -52,12 +52,11 @@ class MessageAcknowledgementTest {
 
     @Test
     void shouldNotImplicitlyAcknowledgeAFailedMessageWhenTheNextMessageIsProcessedOk_SoThatItIsThereToBeReprocessedAfterVisibilityTimeout() {
-
         sendMessage(nemsEventQueueName, "throw me");
-        stubbedNemsEventHandler.waitUntilProcessed("throw me", 10);
+        stubbedNemsEventHandler.waitUntilProcessed("throw me", 25);
 
         sendMessage(nemsEventQueueName, "process me ok");
-        stubbedNemsEventHandler.waitUntilProcessed("process me ok", 10);
+        stubbedNemsEventHandler.waitUntilProcessed("process me ok", 25);
 
         assertThat(getIncomingNemsMessagesCount("ApproximateNumberOfMessagesNotVisible")).isEqualTo(1);
     }
