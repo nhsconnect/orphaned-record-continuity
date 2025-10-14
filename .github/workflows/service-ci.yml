@@ -132,6 +132,17 @@ jobs:
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
     secrets: inherit
 
+  pds-adaptor:
+    name: PDS Adaptor CI
+    needs: [ get_changed_files ]
+    if: contains(needs.get_changed_files.outputs.changed, 'services/pds-adaptor') || contains(needs.get_changed_files.outputs.changed, '.github/')
+    uses: './.github/workflows/base-java-service-jobs.yml'
+    with:
+      service: pds-adaptor
+      environment: dev
+      is_deployment: ${{ github.ref == 'refs/heads/main' }}
+    secrets: inherit
+
   e2e-testing:
     name: End to End
     if: ${{ vars.E2E_TESTS_ENABLED == 'true' && success() }}

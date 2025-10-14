@@ -1,0 +1,15 @@
+fileignoreconfig:
+- filename: Dojofile-cached
+  checksum: e417f7f7cfcf49b128f72acb0ac196f8f3c1d1c2ada4300c552c24a07126b7dd
+- filename: Dojofile-itest
+  checksum: 5a7e45a4da0566ac724d95cfca7ce133e5361f093d5572d3a6e7e3258dd0663a
+- filename: Dojofile
+  checksum: 2c1682b4e1385eb608c9059d14daad9fc004f3f66fe78f5854ae68a6aff3cba3
+- filename: src/performance/test_performance.py
+  checksum: f36641c52c28a9d1d30e4bc05f2028437269c5042aa5512cfd8ec2364bdb9e71
+- filename: src/main/java/uk/nhs/prm/deductions/pdsadaptor/service/ReadSSMParameter.java
+  checksum: 6908435f6a7e4f6c630415acc55444515eac402268f10c64ea8e66a20a342175
+version: ""
+allowed_patterns:
+- key
+- Key
