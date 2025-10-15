@@ -27,7 +27,7 @@ import static org.awaitility.Awaitility.await;
 @SpringBootTest()
 @ActiveProfiles("test")
 @SpringJUnitConfig(TestSpringConfiguration.class)
-@TestPropertySource(properties = {"environment = local", "metricNamespace = SuspensionService"})
+@TestPropertySource(properties = {"environment = local"})
 @ExtendWith(MockitoExtension.class)
 @ContextConfiguration(classes = {LocalStackAwsConfig.class})
 @DirtiesContext
