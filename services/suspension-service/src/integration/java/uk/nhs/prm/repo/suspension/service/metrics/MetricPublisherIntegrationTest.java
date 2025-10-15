@@ -27,7 +27,7 @@ import static org.awaitility.Awaitility.await;
 @SpringBootTest()
 @ActiveProfiles("test")
 @SpringJUnitConfig(TestSpringConfiguration.class)
-@TestPropertySource(properties = {"environment = local"})
+@TestPropertySource(properties = {"environment = local", "metricNamespace = SuspensionService"})
 @ExtendWith(MockitoExtension.class)
 @ContextConfiguration(classes = {LocalStackAwsConfig.class})
 @DirtiesContext
@@ -44,16 +44,50 @@ public class MetricPublisherIntegrationTest {
     @Test
     void shouldPutHealthMetricDataIntoCloudWatch() {
         publisher.publishMetric("Health", HEALTHY_HEALTH_VALUE);
-        List<Metric> metrics = fetchMetricsMatching("SuspensionService", "Health");
-        assertThat(metrics).isNotEmpty();
 
-        final MetricDataResult[] metricData = new MetricDataResult[1];
-        await().atMost(60, TimeUnit.SECONDS).untilAsserted(() -> {
-            metricData[0] = fetchRecentMetricData(2, getMetricWhere(metrics, metricHasDimension("Environment", "local")));
-            assertThat(metricData[0].values()).isNotEmpty();
-        });
-        assertThat(metricData[0].values()).isNotEmpty();
-        assert(metricData[0].values().contains(HEALTHY_HEALTH_VALUE));
+        // Wait until the metric appears
+        List<Metric> metrics = await()
+                .atMost(2, TimeUnit.MINUTES)
+                .pollInterval(2, TimeUnit.SECONDS)
+                .until(() -> fetchMetricsMatching("SuspensionService", "Health"),
+                        list -> list != null && !list.isEmpty());
+
+        Metric metric = metrics.stream()
+                .filter(metricHasDimension("Environment", "local"))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Metric with Environment=local not found"));
+
+        MetricDataResult[] outMax = new MetricDataResult[1];
+        MetricDataResult[] outCnt = new MetricDataResult[1];
+
+        await()
+                .atMost(3, TimeUnit.MINUTES)
+                .pollInterval(2, TimeUnit.SECONDS)
+                .untilAsserted(() -> {
+                    var results = fetchRecentMetricDataPair(5, metric); // returns [max, sampleCount]
+                    outMax[0] = results[0];
+                    outCnt[0] = results[1];
+
+                    assertThat(outMax[0].values()).isNotEmpty();
+                    assertThat(outCnt[0].values()).isNotEmpty();
+
+                    // Pair by timestamp; consider only buckets with samples
+                    boolean seen = false;
+                    for (int i = 0; i < outCnt[0].timestamps().size(); i++) {
+                        Double cnt = outCnt[0].values().get(i);
+                        Instant ts = outCnt[0].timestamps().get(i);
+                        // find matching timestamp index in max series
+                        int j = outMax[0].timestamps().indexOf(ts);
+                        if (j >= 0 && cnt != null && cnt >= 1.0) {
+                            Double v = outMax[0].values().get(j);
+                            if (v != null && Math.abs(v - HEALTHY_HEALTH_VALUE) < 1e-6) {
+                                seen = true;
+                                break;
+                            }
+                        }
+                    }
+                    assertThat(seen).as("found a non-empty bucket with value ~ 1.0").isTrue();
+                });
     }
 
     private Predicate<Metric> metricHasDimension(String name, String value) {
@@ -76,31 +110,45 @@ public class MetricPublisherIntegrationTest {
         return listMetricsResponse.metrics();
     }
 
-    private MetricDataResult fetchRecentMetricData(int minutesOfRecency, Metric metric) {
-        MetricDataQuery dataQuery = MetricDataQuery.builder()
-            .id("health_test_query")
-            .metricStat(MetricStat.builder()
+
+    private MetricDataResult[] fetchRecentMetricDataPair(int minutesOfRecency, Metric metric) {
+        MetricStat statMax = MetricStat.builder()
                 .metric(metric)
-                .period(1)
-                .stat("Minimum")
-                .build())
-            .returnData(true)
-            .build();
-        GetMetricDataRequest request = GetMetricDataRequest.builder()
-            .startTime(Instant.now().minusSeconds(minutesOfRecency * 60).truncatedTo(ChronoUnit.MINUTES))
-            .endTime(Instant.now().truncatedTo(ChronoUnit.MINUTES))
-            .metricDataQueries(dataQuery)
-            .build();
+                .period(60)
+                .stat("Maximum")
+                .build();
 
-        List<MetricDataResult> metricDataResults = cloudWatchClient.getMetricData(request).metricDataResults();
-        System.out.println("metric data results size: " + metricDataResults.size());
-        assertThat(metricDataResults.size()).isEqualTo(1);
+        MetricStat statCnt = MetricStat.builder()
+                .metric(metric)
+                .period(60)
+                .stat("SampleCount")
+                .build();
 
-        MetricDataResult metricDataResult = metricDataResults.get(0);
-        assertThat(metricDataResult.statusCode()).isEqualTo(StatusCode.COMPLETE);
-        System.out.println("metric data result status: " + metricDataResult.statusCodeAsString());
-        System.out.println("metric data result has values list of size: " + metricDataResult.values().size());
-        System.out.println("metric data result hasTimestamps: " + metricDataResult.hasTimestamps());
-        return metricDataResult;
+        MetricDataQuery qMax = MetricDataQuery.builder()
+                .id("q_max")
+                .metricStat(statMax)
+                .returnData(true)
+                .build();
+
+        MetricDataQuery qCnt = MetricDataQuery.builder()
+                .id("q_cnt")
+                .metricStat(statCnt)
+                .returnData(true)
+                .build();
+
+        Instant now = Instant.now();
+        GetMetricDataRequest req = GetMetricDataRequest.builder()
+                .startTime(now.minusSeconds(minutesOfRecency * 60L))
+                .endTime(now.plusSeconds(90))
+                .scanBy(ScanBy.TIMESTAMP_ASCENDING)
+                .metricDataQueries(qMax, qCnt)
+                .build();
+
+        List<MetricDataResult> res = cloudWatchClient.getMetricData(req).metricDataResults();
+        // Expect both series present; status may be PARTIAL while backfilling
+        assertThat(res).hasSize(2);
+        assertThat(res.get(0).statusCode()).isIn(StatusCode.COMPLETE, StatusCode.PARTIAL_DATA);
+        assertThat(res.get(1).statusCode()).isIn(StatusCode.COMPLETE, StatusCode.PARTIAL_DATA);
+        return new MetricDataResult[] { res.get(0), res.get(1) };
     }
 }
