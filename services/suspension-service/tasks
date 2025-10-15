@@ -7,8 +7,7 @@ set -Eeo pipefail
 ###########################
 
 AWS_DEFAULT_REGION=eu-west-2
-export NHS_SERVICE=re-registration-service
-IMAGE_REPO_NAME=repo/$NHS_SERVICE
+IMAGE_REPO_NAME=repo/suspension-service
 AWS_HELPERS_VERSION=0.2.27
 echo "AWS helper scripts version: $AWS_HELPERS_VERSION"
 
@@ -36,9 +35,14 @@ function fetch_redaction_utils() {
   download_util $AWS_HELPERS_VERSION redactor
 }
 
-AWS_HELPERS_FILE=$(download_util $AWS_HELPERS_VERSION aws-helpers)
-source $AWS_HELPERS_FILE
+AWS_HELPERS_FILE="utils/$AWS_HELPERS_VERSION/aws-helpers"
 
+mkdir -p "utils/$AWS_HELPERS_VERSION"
+if [[ ! -f $AWS_HELPERS_FILE ]];then
+  wget --quiet -O $AWS_HELPERS_FILE https://github.com/nhsconnect/prm-deductions-support-infra/releases/download/${AWS_HELPERS_VERSION}/aws-helpers
+fi
+chmod +x $AWS_HELPERS_FILE
+source $AWS_HELPERS_FILE
 
 ####################################
 # Instance (Environment) Variables #
@@ -47,6 +51,11 @@ source $AWS_HELPERS_FILE
 function check_env {
   if [[ -z "${NHS_ENVIRONMENT}" ]]; then
     echo "Must set NHS_ENVIRONMENT"
+    exit 1
+  fi
+
+  if [[ -z "${NHS_SERVICE}" ]]; then
+    echo "Must set NHS_SERVICE"
     exit 1
   fi
 }
@@ -76,12 +85,65 @@ function configure_envs {
 }
 
 function configure_sonar_environment_variable {
-  export SONAR_TOKEN=$(_get_aws_ssm_secret "/repo/dev/output/re-registration-service/sonar_token")
+  export SONAR_TOKEN=$(_get_aws_ssm_secret "/repo/dev/output/suspensions-service/sonar_token")
 }
 
-function use_fake_aws_creds_for_localstack {
-  export AWS_ACCESS_KEY_ID=fake-key-id
-  export AWS_SECRET_ACCESS_KEY=fake-key
+#######################
+# Terraform Functions #
+#######################
+
+function tf_init {
+  check_env
+  cd terraform
+
+  terraform init -reconfigure \
+    -backend-config key="${NHS_SERVICE}-${NHS_ENVIRONMENT}/terraform.tfstate" \
+    -backend-config bucket="prm-deductions-${NHS_ENVIRONMENT}-terraform-state" \
+    -backend-config dynamodb_table="prm-deductions-${NHS_ENVIRONMENT}-terraform-table" \
+    -backend-config region=${AWS_DEFAULT_REGION}
+}
+
+function tf_plan {
+  operation=$1
+
+  if [[ -z "${IMAGE_TAG}" ]]; then
+    set_image_tag
+  fi
+
+  tf_init
+
+  terraform get # modules
+  if [[ "${operation}" == "create" ]]; then
+    terraform plan -var task_image_tag=$IMAGE_TAG -var-file="configs/${NHS_SERVICE}/${NHS_SERVICE}.tfvars" -var-file="configs/${NHS_SERVICE}/$NHS_ENVIRONMENT.tfvars" -out="${NHS_SERVICE}.tfplan"
+  elif [[ "${operation}" == "destroy" ]]; then
+    terraform plan -var task_image_tag=$IMAGE_TAG -var-file="configs/${NHS_SERVICE}/${NHS_SERVICE}.tfvars" -var-file="configs/${NHS_SERVICE}/$NHS_ENVIRONMENT.tfvars" -out="${NHS_SERVICE}.tfplan" -destroy
+  else
+    echo "Unknown operation (should be create or destroy), got: ${operation}"
+    exit 1
+  fi
+}
+
+function tf_apply {
+  tf_init
+  terraform get # modules
+  terraform apply ${NHS_SERVICE}.tfplan
+  terraform output -json > tf-out.json
+}
+
+function configure_local_envs {
+  export LOCALSTACK_URL="http://localhost:4566"
+  export AWS_REGION="eu-west-2"
+  export AWS_DEFAULT_REGION="eu-west-2"
+  export S3_BUCKET_NAME="test-bucket"
+  export DYNAMODB_NAME="local-test-db"
+  export DYNAMODB_LOCAL_ENDPOINT="http://localhost:4566"
+  export AWS_ACCESS_KEY_ID="LSIA5678901234567890"
+  export AWS_SECRET_ACCESS_KEY="LSIA5678901234567890"
+  export NHS_ENVIRONMENT="local"
+}
+
+function run_localstack_local {
+  docker compose -f docker-compose.localstack-local.yaml up -d
 }
 
 function destroy_localstack {
@@ -98,7 +160,6 @@ function destroy_localstack {
     docker stop $DOCKER_CONTAINERS_ON_PORT
   fi
 }
-
 
 ###########
 ## TASKS ##
@@ -118,7 +179,7 @@ case "${command}" in
       configure_docker_repository_uri
       fetch_redaction_utils
       build_docker_image
-      echo "Pushing the Docker image... $REPOSITORY_URI:$IMAGE_TAG"
+      echo "Pushing the Docker image... $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG"
       docker push $REPOSITORY_URI:$IMAGE_TAG
       ;;
   _build)
@@ -139,14 +200,11 @@ case "${command}" in
       ;;
   test_integration)
       configure_envs
-      use_fake_aws_creds_for_localstack
-      destroy_localstack
       ./tasks _test_integration
       ;;
-  test_integration_shell)
+  dojo_integration)
       configure_envs
-      use_fake_aws_creds_for_localstack
-      dojo -c Dojofile-itest
+      ./tasks _test_integration
       ;;
   _test_coverage)
       ./gradlew jacocoTestCoverageVerification
@@ -164,31 +222,18 @@ case "${command}" in
       ./tasks _code_quality
       ;;
   _test_all)
-      ./gradlew test integration jacocoTestCoverageVerification check
+      ./gradlew clean test integration jacocoTestCoverageVerification check
       ;;
   test_all)
       configure_envs
-      use_fake_aws_creds_for_localstack
-      destroy_localstack
       ./tasks _test_all
-      ;;
-  _run_sonar)
-      ./gradlew build sonar --info
-      ;;
-  run_sonar)
-      configure_envs
-      _assume_environment_role $NHS_ENVIRONMENT
-      configure_sonar_environment_variable
-      use_fake_aws_creds_for_localstack
-      destroy_localstack
-      ./tasks _run_sonar
       ;;
   run_local)
       configure_envs
       ./gradlew bootRun
       ;;
   run_localstack_local)
-      docker-compose -f docker-compose.localstack-local.yaml up -d
+      run_localstack_local
       ;;
   _tf)
       _assume_environment_role $NHS_ENVIRONMENT
@@ -198,6 +243,26 @@ case "${command}" in
   tf)
       check_env
       ./tasks _tf
+      ;;
+  _tf_plan_suspension)
+      export NHS_SERVICE=suspension-service
+      _assume_environment_role $NHS_ENVIRONMENT
+      tf_plan $2
+      ;;
+  tf_plan_suspension)
+      export NHS_SERVICE=suspension-service
+      check_env
+      ./tasks _tf_plan $2
+      ;;
+  _tf_plan_transfer)
+      export NHS_SERVICE=end-of-transfer-service
+      _assume_environment_role $NHS_ENVIRONMENT
+      tf_plan $2
+      ;;
+  tf_plan_transfer)
+      export NHS_SERVICE=end-of-transfer-service
+      check_env
+      ./tasks _tf_plan $2
       ;;
   _tf_plan)
       _assume_environment_role $NHS_ENVIRONMENT
@@ -230,6 +295,16 @@ case "${command}" in
   wait_ecs)
       check_env
       ./tasks _wait_ecs
+      ;;
+  _run_sonar)
+      ./gradlew build sonar --info
+      ;;
+  run_sonar)
+      destroy_localstack
+      _assume_environment_role $NHS_ENVIRONMENT
+      configure_envs
+      configure_sonar_environment_variable
+      ./tasks _run_sonar
       ;;
   *)
       echo "Invalid command: '${command}'"

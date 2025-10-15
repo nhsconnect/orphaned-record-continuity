@@ -15,6 +15,8 @@ on:
       - 'services/re-registration-service/**'
       - 'services/gp2gp-messenger/**'
       - 'services/mesh-inbox-s3-forwarder/**'
+      - 'services/suspension-service/**'
+      - '.github/workflows/service-ci.yml'
 
   pull_request:
     types:
@@ -34,6 +36,7 @@ on:
       - 'services/re-registration-service/**'
       - 'services/gp2gp-messenger/**'
       - 'services/mesh-inbox-s3-forwarder/**'
+      - 'services/suspension-service/**'
       - '.github/workflows/service-ci.yml'
 
 permissions:
@@ -161,6 +164,18 @@ jobs:
     uses: './.github/workflows/base-java-service-jobs.yml'
     with:
       service: ehr-transfer-service
+      environment: dev
+      is_deployment: ${{ github.ref == 'refs/heads/main' }}
+      requires_localstack: true
+    secrets: inherit
+
+  suspension-service:
+    name: Suspension Service CI
+    needs: [ get_changed_files]
+    if: contains(needs.get_changed_files.outputs.changed, 'services/suspension-service') || contains(needs.get_changed_files.outputs.changed, '.github/')
+    uses: './.github/workflows/base-java-service-jobs.yml'
+    with:
+      service: suspension-service
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
       requires_localstack: true
