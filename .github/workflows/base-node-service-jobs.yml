@@ -162,6 +162,7 @@ jobs:
             docker push "$REGISTRY/$REPOSITORY:$REF_TAG"
           fi  
           
+
   deploy_infra:
     name: Deploy Infrastructure
     needs: [build_and_publish]
