@@ -1,5 +1,102 @@
+# IDE
 .idea
-node_modules
-build/
+*.iml
+.vscode
+
+# Dependency directories
+node_modules/
+jspm_packages/
 venv/
+
+# Build directories
+build/
+bin/
+dist/
+
+# Coverage directories
 coverage/
+*.lcov
+
+# Locally generated files
+outdated-dependencies.txt
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Dojo
+*.dojo
+
+# Terraform
+**/.terraform/*
+/terraform/nhs_deployment.tfplan
+/terraform/tf-out.json
+/terraform/.terraform.lock.hcl
+
+# Imported utilities
+/utils/*
+/utils/*/*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+.coverage
+.tox/
+.env
+
+# Gradle
+.gradle/
+**/build/
+gradle-app.setting
+!gradle-wrapper.jar
+.gradletasknamecache
+
+# Java
+*.class
+*.jar
+*.war
+target/
+out/
+
+# MacOS
+.DS_Store
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Test output
+test-results/
+reports/
+
+# Local SSL/TLS certificates
+*.pem
+*.key
+*.crt
+
+# Volume data
+volume/
+
+# Sonar
+.scannerwork/
+.sonar/
+
+# Misc
+.tmp/
+.temp/
+*.swp
+*.bak
+*~
