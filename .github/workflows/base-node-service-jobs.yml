@@ -25,7 +25,6 @@ env:
   LOCALSTACK_URL: http://localhost:4566
   DYNAMODB_NAME: local-test-db
   DYNAMODB_LOCAL_ENDPOINT: http://localhost:4566
-  # LSIA... keys are valid for localstack
   AWS_ACCESS_KEY_ID: LSIA5678901234567890
   AWS_SECRET_ACCESS_KEY: LSIA5678901234567890
   SERVICE_URL: http://localhost:3000
@@ -40,10 +39,8 @@ jobs:
         run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
         id: extract_branch
 
-      - uses: actions/checkout@v5
-        with:
-          ref: ${{ steps.extract_branch.outputs.branch }}
-          fetch-depth: 0
+      - name: Checkout
+        uses: actions/checkout@v5
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -168,7 +165,7 @@ jobs:
   deploy_infra:
     name: Deploy Infrastructure
     needs: [build_and_publish]
-    uses: nhsconnect/prm-deductions-infra/.github/workflows/base-deploy-stack.yml@PRM-481-1
+    uses: nhsconnect/orphaned-record-continuity-infra/.github/workflows/base-deploy-stack.yml@PRM-481-1
     with:
       stack: ${{ inputs.service }}
       environment: ${{ inputs.environment }}

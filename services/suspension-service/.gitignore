@@ -50,3 +50,5 @@ docker-compose.yaml.dojo
 
 # packaged lambda
 lambda/*.zip
+
+volume

@@ -129,7 +129,7 @@ jobs:
   deploy_infra:
     name: Deploy Infrastructure
     needs: [build_and_publish]
-    uses: nhsconnect/prm-deductions-infra/.github/workflows/base-deploy-stack.yml@PRM-481-1
+    uses: nhsconnect/orphaned-record-continuity-infra/.github/workflows/base-deploy-stack.yml@PRM-481-1
     with:
       stack: ${{ inputs.service }}
       environment: ${{ inputs.environment }}

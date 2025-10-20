@@ -33,9 +33,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
-        with:
-          repository: 'nhsconnect/prm-repo-ehr-repository'
-          ref: PRM-496
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -112,7 +110,7 @@ jobs:
     if: ${{ inputs.deploy_infra && inputs.is_deployment }}
     name: Deploy Infrastructure
     needs: [ build-and-publish-service ]
-    uses: nhsconnect/prm-deductions-infra/.github/workflows/base-deploy-stack.yml@r0.1.1
+    uses: nhsconnect/orphaned-record-continuity-infra/.github/workflows/base-deploy-stack.yml@r0.1.1
     with:
       stack: ${{ inputs.service }}
       environment: ${{ inputs.environment }}
