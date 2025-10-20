@@ -159,31 +159,6 @@ function generate_mesh_fqdn() {
     fi
 }
 
-
-############################
-# Docker Related Functions #
-############################
-
-function get_aws_account_id() {
-  AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account")
-}
-
-function docker_login() {
-  echo Logging in to Amazon ECR...
-  eval $(aws ecr get-login --no-include-email --region $AWS_DEFAULT_REGION")
-}
-
-function docker_login_and_export_repository_uri() {
-  docker_login
-  export REPOSITORY_URI="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME"
-}
-
-function pull_registrations_forwarder_image() {
-  SRC_IMAGE_NAME_AND_TAG="${AWS_ACCOUNT_ID}.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/registrations/mesh-inbox-s3-forwarder:${SOURCE_IMAGE_TAG}"
-  docker pull "$SRC_IMAGE_NAME_AND_TAG"
-  docker tag "$SRC_IMAGE_NAME_AND_TAG" "registrations/mesh-inbox-s3-forwarder:${SOURCE_IMAGE_TAG}"
-}
-
 function build_forwarder_image() {
   fetch_redaction_utils
   docker build --build-arg SOURCE_IMAGE_TAG=$SOURCE_IMAGE_TAG \
@@ -267,7 +242,7 @@ case "${command}" in
     echo "https://digital.nhs.uk/forms/combined-endpoint-and-service-registration-request"
     ;;
     csr)
-     ./tasks _csr"
+     ./tasks _csr
       ;;
   _csr_nems_prod)
     if [ -z $ODS_CODE ]; then
@@ -278,7 +253,7 @@ case "${command}" in
     generate_csr "$ODS_CODE-nems-prod" $fqdn
     ;;
    csr_nems_prod)
-    ./tasks _csr_nems_prod"
+    ./tasks _csr_nems_prod
     ;;
 
   _csr_mesh)
