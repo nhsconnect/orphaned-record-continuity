@@ -11,18 +11,15 @@ The initial version will send health records that are encoded in the HL7 format.
 
 - [Node](https://nodejs.org/en/download/package-manager/#nvm) - version 14.x
 - [Docker](https://docs.docker.com/install/)
-- [kudulab/dojo](https://github.com/kudulab/dojo#installation)
-
+ 
 ### AWS helpers
 
 This repository imports shared AWS helpers from [prm-deductions-support-infra](https://github.com/nhsconnect/prm-deductions-support-infra/).
 They can be found `utils` directory after running any task from `tasks` file.
 
 ## Set up
-To replicate the CI environment, we use `dojo` that allows us to work with the codebase without installing any dependencies locally.
-Please see the `./tasks` file that includes all the tasks you can use to configure and run the app and the tests.
 
-If you would like to run the app locally outside `dojo`, you need to:
+If you would like to run the app locally, you need to:
 1. Run `npm install` to install all node dependencies as per `package.json`.
 2. Set up the env variables and/or copy them into your IDE configurations (`Run -> Edit Configurations ->Environment Variables` in IntelliJ):
 ```
@@ -41,33 +38,21 @@ export GP2GP_MESSENGER_REPOSITORY_ODS_CODE=deduction-ods
  
 ## Running the tests
 
-Run the unit tests with
-
-by entering the `dojo` container and running `./tasks _test_unit`
+Run the unit tests by  running `./tasks _test_unit`
 or on your machine with `npm run test:unit`
 
-Run the integration tests within a Dojo container
-
-1. Run `dojo -c Dojofile-itest` which will spin up the testing container
-2. Run `./tasks _test_integration`
+Run the integration tests with:
+`./tasks _test_integration`
 
 You can also run them with `npm run test:integration` but that will require some additional manual set-up
 
 
 Run the coverage tests (unit test and integration test)
 
-By entering the `dojo` container and running `./tasks _test_coverage`
+By running `./tasks _test_coverage`
 
 or run `npm run test:coverage` on your machine
 
-You don't have to enter the dojo container every time, you can also just run any task in your terminal:
-For example:
-
-`./tasks test_coverage`
-
-`./tasks test_unit`
-
-`./tasks dep` - to run audit
 
 ## Start the app locally
 
@@ -104,20 +89,4 @@ As a note, this set-up is based on the README of assume-role [tool](https://gith
 
 ## Assume role with elevated permissions
 
-### Install `assume-role` locally:
-`brew install remind101/formulae/assume-role`
-
-Run the following command with the profile configured in your `~/.aws/config`:
-
-`assume-role admin`
-
-### Run `assume-role` with dojo:
-Run the following command with the profile configured in your `~/.aws/config`:
-
-`eval $(dojo "echo <mfa-code> | assume-role dev"`
-or
-`assume-role dev [here choose one of the options from your config: ci/dev/test]`
-
-Run the following command to confirm the role was assumed correctly:
-
-`aws sts get-caller-identity`
+In order to get sufficient access to work with terraform or AWS CLI, please export secrets from the AWS Access Portal for the environment you are using

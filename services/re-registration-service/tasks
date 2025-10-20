@@ -143,11 +143,6 @@ case "${command}" in
       destroy_localstack
       ./tasks _test_integration
       ;;
-  test_integration_shell)
-      configure_envs
-      use_fake_aws_creds_for_localstack
-      dojo -c Dojofile-itest
-      ;;
   _test_coverage)
       ./gradlew jacocoTestCoverageVerification
       ;;

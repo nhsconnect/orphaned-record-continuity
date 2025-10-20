@@ -202,10 +202,6 @@ case "${command}" in
       configure_envs
       ./tasks _test_integration
       ;;
-  dojo_integration)
-      configure_envs
-      ./tasks _test_integration
-      ;;
   _test_coverage)
       ./gradlew jacocoTestCoverageVerification
       ;;

@@ -94,75 +94,13 @@ function set_image_tag() {
 }
 
 function get_aws_account_id {
-    AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account")
+    AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account)
 }
 
 function configure_aws_service_e2e_test_auth_keys_for_gp2gp_messenger {
     parameter_name="/repo/${NHS_ENVIRONMENT}/user-input/api-keys/${NHS_SERVICE}/e2e-test"
     export E2E_TEST_AUTHORIZATION_KEYS_FOR_GP2GP_MESSENGER=$(_get_aws_ssm_secret ${parameter_name})
 }
-
-#######################
-# Terraform Functions #
-#######################
-
-function configure_tf_plan_filename {
-  certs=$1
-  if [[ "${certs}" == "true" ]]; then
-    export TF_PLAN_FILENAME="certs_deployment.tfplan"
-  else
-    export TF_PLAN_FILENAME="deployment.tfplan"
-  fi
-}
-
-function tf_init {
-  check_env
-  cd terraform
-
-  terraform init -reconfigure \
-    -backend-config key="${NHS_SERVICE}-${NHS_ENVIRONMENT}/terraform.tfstate" \
-    -backend-config bucket="prm-deductions-${NHS_ENVIRONMENT}-terraform-state" \
-    -backend-config dynamodb_table="prm-deductions-${NHS_ENVIRONMENT}-terraform-table" \
-    -backend-config region=${AWS_DEFAULT_REGION}
-}
-
-function tf_plan {
-  operation=$1
-  certs=$2
-  set_image_tag
-
-  TARGET=""
-
-  configure_tf_plan_filename $certs
-
-  if [[ "${certs}" == "true" ]]; then
-    TARGET="-target=aws_acm_certificate.gp2gp-messenger-cert"
-  fi
-
-  tf_init
-  terraform get # modules
-  if [[ "${operation}" == "create" ]]; then
-    terraform plan -var task_image_tag=$IMAGE_TAG -var-file=$NHS_ENVIRONMENT.tfvars $TARGET -out="${TF_PLAN_FILENAME}"
-  elif [[ "${operation}" == "destroy" ]]; then
-    terraform plan -var task_image_tag=$IMAGE_TAG -var-file=$NHS_ENVIRONMENT.tfvars -out="${TF_PLAN_FILENAME}" -destroy
-  else
-    echo "Unknown operation (should be create or destroy), got: ${operation}"
-    exit 1
-  fi
-}
-
-function tf_apply {
-  tf_init
-  terraform get # modules
-  terraform apply deployment.tfplan
-}
-
-function tf_apply_certs {
-  tf_init
-  terraform get # modules
-  terraform apply certs_deployment.tfplan
-}
-
 
 ####################
 # Script Functions #
@@ -186,29 +124,6 @@ function generate_authorization_keys {
      --overwrite \
      --value "$value"
   fi
-}
-
-############################
-# Docker Related Functions #
-############################
-
-function docker_login {
-  echo Logging in to Amazon ECR...
-  eval $(aws ecr get-login --no-include-email --region $AWS_DEFAULT_REGION")
-}
-
-function configure_docker_repository_uri {
-  docker_login
-  get_aws_account_id
-  export REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/$IMAGE_REPO_NAME
-}
-
-function build_docker_image {
-  echo Build started on `date`
-  set_image_tag
-  echo Building the Docker image...
-  docker build --build-arg UTILS_VERSION=$AWS_HELPERS_VERSION -t $REPOSITORY_URI:latest -t $REPOSITORY_URI:$IMAGE_TAG .
-  echo Build completed on `date`
 }
 
 ###########
@@ -270,10 +185,6 @@ case "${command}" in
   test_integration)
       configure_local_envs
       ./tasks _test_integration
-      ;;
-  test_integration_shell)
-      configure_local_envs
-      dojo -c Dojofile-itest
       ;;
   sanity_check)
       ./tasks _sanity_check

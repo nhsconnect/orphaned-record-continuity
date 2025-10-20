@@ -15,7 +15,6 @@ Follow the links to download
 
 - [Node](https://nodejs.org/en/download/package-manager/#nvm) - version 14.x
 - [Docker](https://docs.docker.com/install/)
-- [kudulab/dojo](https://github.com/kudulab/dojo#installation)
 
 ### AWS helpers
 
@@ -41,7 +40,6 @@ necessarily compatible*
 
 1. Run `npm install` to install all node dependencies.
 2. Configure local environment variables:
-    - enter `dojo`
     - run `./tasks _setup_test_integration_local`
 3. Run `npm run start:local`
 4. If successful, you will be able to reach the Swagger docs: [http://localhost:3000/swagger/](http://localhost:3000/swagger/)
@@ -68,18 +66,16 @@ The swagger documentation for the app can be found at [http://localhost:3000/swa
 
 Run the unit tests with `npm run test:unit` (or `npm test` to run it with lint). 
 
-Alternatively, `./tasks test` can be used to run the tests with Dojo.
+Alternatively, `./tasks test` can be used to run the tests.
 
 ### Integration tests
 
-Enter `dojo -c Dojofile-itest`
-Run `./tasks test_integration` to run with Dojo.
+Run `./tasks test_integration` to run integration tests.
 
 ### Coverage tests
 
 Runs the coverage tests (unit test and integration test) and collects coverage metrics.
-Enter `dojo -c Dojofile-itest`
-Run `./tasks test_coverage` to run within Dojo.
+Run `./tasks test_coverage` to run coverage tests.
 
 ### Local Docker tests
 
@@ -108,36 +104,4 @@ Below are the environment variables that are automatically set:
 
 ## Access to AWS
 
-In order to get sufficient access to work with terraform or AWS CLI, please follow the instructions on this [confluence pages](https://gpitbjss.atlassian.net/wiki/spaces/TW/pages/11384160276/AWS+Accounts+and+Roles)
-and [this how to?](https://gpitbjss.atlassian.net/wiki/spaces/TW/pages/11286020174/How+to+set+up+access+to+AWS+from+CLI)
-
-As a note, this set-up is based on the README of assume-role [tool](https://github.com/remind101/assume-role)
-
-## Assume role with elevated permissions
-
-### Install `assume-role` locally:
-`brew install remind101/formulae/assume-role`
-
-Run the following command with the profile configured in your `~/.aws/config`:
-
-`assume-role dev [here choose one of the options from your config: ci/dev/test]`
-
-### Run `assume-role` with dojo:
-Run the following command with the profile configured in your `~/.aws/config`:
-
-`eval $(dojo "echo <mfa-code> | assume-role dev"`
-or
-`assume-role dev [here choose one of the options from your config: ci/dev/test]`
-
-Run the following command to confirm the role was assumed correctly:
-
-`aws sts get-caller-identity`
-
-Work with terraform as per usual:
-
-```
-terraform init
-terraform apply
-```
-
-If your session expires, exit the container to drop the temporary credentials and run dojo again.
+In order to get sufficient access to work with terraform or AWS CLI, please export secrets from the AWS Access Portal for the environment you are using.

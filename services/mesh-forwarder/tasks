@@ -144,53 +144,7 @@ function setup_venv {
 }
 
 function get_aws_account_id() {
-  AWS_ACCOUNT_ID=$(dojo -c Dojofile-infra "aws sts get-caller-identity | jq -r .Account")
-}
-
-#######################
-# Terraform Functions #
-#######################
-
-function tf_init() {
-  check_env
-
-  cd terraform
-
-  terraform init -reconfigure \
-    -backend-config key="${NHS_SERVICE}-${NHS_ENVIRONMENT}/terraform.tfstate" \
-    -backend-config bucket="prm-deductions-${NHS_ENVIRONMENT}-terraform-state" \
-    -backend-config dynamodb_table="prm-deductions-${NHS_ENVIRONMENT}-terraform-table" \
-    -backend-config region=${AWS_DEFAULT_REGION}
-}
-
-function tf_plan() {
-  operation=$1
-  certs=$2
-  TARGET=""
-
-  echo "Image tag is ${IMAGE_TAG}"
-
-  if [[ "${certs}" == "true" ]]; then
-    TARGET="-target=aws_acm_certificate.mesh-forwarder-cert"
-  fi
-
-  tf_init
-  terraform get # modules
-  if [[ "${operation}" == "create" ]]; then
-    terraform plan -var task_image_tag="$IMAGE_TAG" -var-file=$NHS_ENVIRONMENT.tfvars $TARGET -out="nhs_deployment.tfplan"
-  elif [[ "${operation}" == "destroy" ]]; then
-    terraform plan -var task_image_tag=$IMAGE_TAG -var-file=$NHS_ENVIRONMENT.tfvars -out="nhs_deployment.tfplan" -destroy
-  else
-    echo "Unknown operation (should be create or destroy), got: ${operation}"
-    exit 1
-  fi
-}
-
-function tf_apply() {
-  tf_init
-  terraform get # modules
-  terraform apply nhs_deployment.tfplan
-  terraform output -json >tf-out.json
+  AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account)
 }
 
 function generate_mesh_fqdn() {
@@ -211,12 +165,12 @@ function generate_mesh_fqdn() {
 ############################
 
 function get_aws_account_id() {
-  AWS_ACCOUNT_ID=$(dojo -c Dojofile-infra "aws sts get-caller-identity | jq -r .Account")
+  AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account")
 }
 
 function docker_login() {
   echo Logging in to Amazon ECR...
-  eval $(dojo -c Dojofile-infra "aws ecr get-login --no-include-email --region $AWS_DEFAULT_REGION")
+  eval $(aws ecr get-login --no-include-email --region $AWS_DEFAULT_REGION")
 }
 
 function docker_login_and_export_repository_uri() {
@@ -301,35 +255,6 @@ EOF
 
 command="$1"
 case "${command}" in
-  tf)
-    check_env
-    dojo -c Dojofile-infra "bash"
-    ;;
-  _tf_plan_certs)
-    _assume_environment_role $NHS_ENVIRONMENT
-    tf_plan "$2" true
-    ;;
-  tf_plan_certs)
-    check_env
-    dojo -c Dojofile-infra "./tasks _tf_plan_certs $2"
-    ;;
-  _tf_plan)
-    _assume_environment_role $NHS_ENVIRONMENT
-    set_image_tag
-    tf_plan "$2" "$IMAGE_TAG"
-    ;;
-  tf_plan)
-    check_env
-    dojo -c Dojofile-infra "./tasks _tf_plan $2"
-    ;;
-  _tf_apply)
-    _assume_environment_role $NHS_ENVIRONMENT
-    tf_apply
-    ;;
-  tf_apply)
-    check_env
-    dojo -c Dojofile-infra "./tasks _tf_apply"
-    ;;
   _csr)
     check_env
     if [ -z $ODS_CODE ]; then
@@ -342,7 +267,7 @@ case "${command}" in
     echo "https://digital.nhs.uk/forms/combined-endpoint-and-service-registration-request"
     ;;
     csr)
-     dojo -c Dojofile-infra "./tasks _csr"
+     ./tasks _csr"
       ;;
   _csr_nems_prod)
     if [ -z $ODS_CODE ]; then
@@ -353,7 +278,7 @@ case "${command}" in
     generate_csr "$ODS_CODE-nems-prod" $fqdn
     ;;
    csr_nems_prod)
-    dojo -c Dojofile-infra "./tasks _csr_nems_prod"
+    ./tasks _csr_nems_prod"
     ;;
 
   _csr_mesh)
@@ -370,7 +295,7 @@ case "${command}" in
     echo "https://gpitbjss.atlassian.net/wiki/spaces/TW/pages/11604721782/Requesting+a+MESH+mailbox"
     ;;
    csr_mesh)
-    dojo -c Dojofile-infra "./tasks _csr_mesh"
+    ./tasks _csr_mesh
     ;;
 
   _get_authorisation_token)
@@ -378,7 +303,7 @@ case "${command}" in
     ;;
   get_authorisation_token)
     check_env
-    dojo -c Dojofile-python "./tasks _get_authorisation_token"
+    ./tasks _get_authorisation_token
     ;;
   _create_nems_subscription_and_update_ssm)
     _assume_environment_role $NHS_ENVIRONMENT
@@ -387,7 +312,7 @@ case "${command}" in
     echo Successfully processed subscription
     ;;
   create_nems_subscription_and_update_ssm)
-    dojo -c Dojofile-python "./tasks _create_nems_subscription_and_update_ssm"
+    ./tasks _create_nems_subscription_and_update_ssm
     ;;
   _test_nems_subscriber)
     get_local_tkw_subscriptions_env
@@ -401,42 +326,42 @@ case "${command}" in
     python3 create_subscription.py
     ;;
   create_nems_subscription)
-    dojo -c Dojofile-python "./tasks _create_nems_subscription"
+    ./tasks _create_nems_subscription
     ;;
   _read_nems_subscription)
     set_nems_env
     python3 read_subscription.py
     ;;
   read_nems_subscription)
-    dojo -c Dojofile-python "./tasks _read_nems_subscription"
+    ./tasks _read_nems_subscription
     ;;
   _delete_nems_subscription)
     set_nems_env
     python3 delete_subscription.py
     ;;
   delete_nems_subscription)
-    dojo -c Dojofile-python "./tasks _delete_nems_subscription"
+    ./tasks _delete_nems_subscription
     ;;
   _print_create_subscription)
     set_nems_env
     python3 print_create_subscription.py
     ;;
   print_create_subscription)
-    dojo -c Dojofile-python "./tasks _print_create_subscription"
+    ./tasks _print_create_subscription
     ;;
   _print_read_subscription)
     set_nems_env
     python3 print_read_subscription.py
     ;;
   print_read_subscription)
-    dojo -c Dojofile-python "./tasks _print_read_subscription"
+    ./tasks _print_read_subscription
     ;;
   _print_delete_subscription)
     set_nems_env
     python3 print_delete_subscription.py
     ;;
   print_delete_subscription)
-    dojo -c Dojofile-python "./tasks _print_delete_subscription"
+    ./tasks _print_delete_subscription
     ;;
   promote_docker_image)
     check_env
@@ -455,7 +380,7 @@ case "${command}" in
     ;;
   wait_ecs)
     check_env
-    dojo -c Dojofile-infra "./tasks _wait_ecs"
+    ./tasks _wait_ecs
     ;;
   fetch_utils)
     fetch_redaction_utils

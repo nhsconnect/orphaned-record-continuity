@@ -24,7 +24,7 @@ They can be found `utils` directory after running any task from `tasks` file.
 
 ### Running the tests and additional checks
 
-Run the unit tests with dojo
+Run the unit tests with:
 
 ```
 ./tasks _test_unit
@@ -36,18 +36,18 @@ In your terminal with
 ./gradlew test
 ```
 
-Run the integration tests with dojo
+Run the integration tests with:
 ```
 ./tasks test_integration
 ```
 
-Run the coverage tests with a Dojo container
+Run the coverage tests with:
 
 ```
 ./tasks test_coverage
 ```
 
-Run the dependency check tests with a Dojo container
+Run the dependency check tests with:
 
 ```
 ./tasks dep
@@ -94,21 +94,8 @@ aws_secret_access_key = <your-aws-secret-access-key>
 
 ## Assume role with elevated permissions
 
-### Install `assume-role` locally:
-`brew install remind101/formulae/assume-role`
 
-Run the following command with the profile configured in your `~/.aws/config`:
-
-`assume-role admin`
-
-### Run `assume-role` with dojo:
-Run the following command with the profile configured in your `~/.aws/config`:
-
-`eval $(dojo "echo <mfa-code> | assume-role admin"`
-
-Run the following command to confirm the role was assumed correctly:
-
-`aws sts get-caller-identity`
+In order to get sufficient access to work with terraform or AWS CLI, please export secrets from the AWS Access Portal for the environment you are using
 
 ## AWS SSM Parameters Design Principles
 

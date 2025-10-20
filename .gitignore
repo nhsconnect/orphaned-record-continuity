@@ -26,9 +26,6 @@ outdated-dependencies.txt
 # Optional eslint cache
 .eslintcache
 
-# Dojo
-*.dojo
-
 # Terraform
 **/.terraform/*
 /terraform/nhs_deployment.tfplan

@@ -5,14 +5,6 @@ set -Eeo pipefail
 aws_region=eu-west-2
 image_repo_name=registrations/mesh-inbox-s3-forwarder
 
-function docker_login {
-  dojo -c Dojofile-infra "aws ecr get-login --no-include-email --region $aws_region"
-}
-
-function get_aws_account_id {
-  dojo -c Dojofile-infra "aws sts get-caller-identity --query Account --output text"
-}
-
 function validate_image_tag {
   if [ -z $IMAGE_TAG ]; then
     echo "Please set IMAGE_TAG environment variable"
@@ -52,9 +44,6 @@ do
     validate)
         ./tasks check-format typecheck lint test
         ;;
-    dojo-validate)
-        dojo "./tasks devenv validate"
-        ;;
     clean)
         find ./tests -type f -name "*.pyc" -delete
         find ./tests -type d -name "__pycache__" -delete
@@ -77,14 +66,11 @@ do
     dep)
         ./tasks check-deps > audit-output.txt
         ;;
-    dojo-dep)
-        dojo "./tasks devenv dep"
-        ;;
     _generate-requirements)
         pipenv lock -r > requirements.txt
         ;;
     generate-requirements)
-        dojo "./tasks _generate-requirements"
+        ./tasks _generate-requirements
         ;;
     build-docker)
         build_docker

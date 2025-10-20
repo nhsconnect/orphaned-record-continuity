@@ -7,7 +7,6 @@ MESH forwarder is responsible reading messages from a MESH inbox and passing the
 
 Follow the links to download
 - [Docker](https://docs.docker.com/install/)
-- [kudulab/dojo](https://github.com/kudulab/dojo#installation)
 
 
 ### Manual query and send interactions

@@ -8,7 +8,6 @@ export const getDynamodbClient = () => {
   };
 
   if (IS_IN_LOCAL) {
-    // for running integration test in dojo or IDE
     clientConfig.endpoint = process.env.DYNAMODB_LOCAL_ENDPOINT ?? 'http://localhost:4573';
   }
 

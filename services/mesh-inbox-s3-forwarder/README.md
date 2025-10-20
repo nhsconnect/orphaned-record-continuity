@@ -8,7 +8,6 @@ Generic AWS MESH forwarder, capable of reading messages from a MESH inbox and wr
 In order to get started with development, you will need Python - version 3.9 or higher.
 
 To run the tests in the same container image used in the CI pipeline, you will need:
-- [dojo](https://github.com/kudulab/dojo) 
 - [Docker](https://www.docker.com/get-started) - version 3.1.0 or higher
 - Python 3.9. Use [pyenv](https://github.com/pyenv/pyenv) to easily switch Python versions.
 - [Pipenv](https://pypi.org/project/pipenv/). Install by running `python -m pip install pipenv`
@@ -48,7 +47,7 @@ Run the following commands in the virtual environment:
 
 #### Checking dependencies fails locally due to pip
 
-If running `./tasks check-deps` fails due to an outdated version of pip, yet works when running it in dojo (i.e. `./tasks dojo-deps`), then the local python environment containing pipenv may need to be updated (using pyenv instead of brew - to better control the pip version).
+If running `./tasks check-deps` fails due to an outdated version of pip, then the local python environment containing pipenv may need to be updated (using pyenv instead of brew - to better control the pip version).
 Ensure you have pyenv installed (use `brew install pyenv`).
 Perform the following steps:
 

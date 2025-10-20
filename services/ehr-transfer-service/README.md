@@ -26,40 +26,34 @@ application
 
 In your terminal with `./gradlew bootRun`.
 
-This application relies on the queues to send/receive messages. They are spun up with `docker-compose-itest.yml` when
-running the tests in `dojo`. You can access the queues using the Active MQ console on: `http://localhost:8161/`
+This application relies on the queues to send/receive messages. They are spun up with `docker-compose.localstack-local.yml`.
+You can access the queues using the Active MQ console on: `http://localhost:8161/`
 
 ### Running the tests
 
-Run the unit tests with dojo
-
-1. Enter ` dojo `
-2. `./tasks _test_unit`
+Run the unit tests with:
+`./tasks _test_unit`
 
 In your terminal with
 `./gradlew test`
 
-Run the integration tests with dojo
+Run the integration tests with:
 
-1. Enter ` dojo `
-2. `./tasks _test_integration`
+`./tasks _test_integration`
 
 Alternatively, you can use `play` button next to each test in IntelliJ (your IDE)
 
-Run the coverage tests with a Dojo container
+Run the coverage tests with:
 
-1. Enter ` dojo `
-2. `./tasks _test_coverage`
+`./tasks _test_coverage`
 
-Run the dependency check tests with a Dojo container
+Run the dependency check tests with:
 
-1. Enter ` dojo `
-2. `./tasks _dep`
+`./tasks _dep`
 
-To run all the checks before committing with one command
+To run all the checks before committing with:
 
-1. Enter `dojo `
-2. `./tasks _test_all`
+`./tasks _test_all`
 
 ### Config
 
@@ -119,23 +113,7 @@ aws_secret_access_key = <your-aws-secret-access-key>
 
 ## Assume role with elevated permissions
 
-### Install `assume-role` locally:
-
-`brew install remind101/formulae/assume-role`
-
-Run the following command with the profile configured in your `~/.aws/config`:
-
-`assume-role admin`
-
-### Run `assume-role` with dojo:
-
-Run the following command with the profile configured in your `~/.aws/config`:
-
-`eval $(dojo "echo <mfa-code> | assume-role admin"`
-
-Run the following command to confirm the role was assumed correctly:
-
-`aws sts get-caller-identity`
+In order to get sufficient access to work with terraform or AWS CLI, please export secrets from the AWS Access Portal for the environment you are using
 
 ## AWS SSM Parameters Design Principles
 
