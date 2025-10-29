@@ -37,7 +37,7 @@
     "jest-when": "^3.5.1",
     "nodemon": "^2.0.19",
     "npm-audit-resolver": "3.0.0-7",
-    "prettier": "^2.6.0",
+    "prettier": "^3.5.3",
     "supertest": "^6.3.3",
     "typescript": "^4.6.2"
   },
