@@ -51,7 +51,7 @@
     "express": "^4.19.2",
     "express-validator": "^6.14.0",
     "express-winston": "^4.2.0",
-    "helmet": "^6.0.0",
+    "helmet": "^8.1.0",
     "lodash.chunk": "^4.2.0",
     "lodash.clonedeep": "^4.5.0",
     "lodash.merge": "^4.6.2",
