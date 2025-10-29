@@ -7,7 +7,7 @@ WORKDIR /app
 RUN npm ci --omit=dev
 
 # production app image
-FROM alpine:3.17
+FROM alpine:3.21
 
 # take just node without npm (including npx) or yarn
 COPY --from=builder /usr/local/bin/node /usr/local/bin
