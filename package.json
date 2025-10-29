@@ -61,7 +61,7 @@
     "swagger-ui-express": "^4.3.0",
     "traverse": "^0.6.6",
     "uuid": "^8.3.2",
-    "winston": "^3.6.0"
+    "winston": "^3.17.0"
   },
   "jest": {
     "resetModules": true,
