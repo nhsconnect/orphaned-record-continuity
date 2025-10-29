@@ -60,7 +60,7 @@
     "sinon": "^15.1.2",
     "swagger-ui-express": "^4.3.0",
     "traverse": "^0.6.6",
-    "uuid": "^8.3.2",
+    "uuid": "^11.1.0",
     "winston": "^3.6.0"
   },
   "jest": {
