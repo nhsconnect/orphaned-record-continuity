@@ -22,7 +22,7 @@
     "start:nodemon": "nodemon --exec npm run start:local"
   },
   "devDependencies": {
-    "@babel/cli": "^7.23.0",
+    "@babel/cli": "^7.27.2",
     "@babel/core": "^7.23.0",
     "@babel/node": "^7.22.19",
     "@babel/plugin-transform-runtime": "^7.23.0",
