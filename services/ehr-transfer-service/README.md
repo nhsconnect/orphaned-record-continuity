@@ -32,28 +32,28 @@ You can access the queues using the Active MQ console on: `http://localhost:8161
 ### Running the tests
 
 Run the unit tests with:
-`./tasks _test_unit`
+`./tasks test_unit`
 
 In your terminal with
 `./gradlew test`
 
 Run the integration tests with:
 
-`./tasks _test_integration`
+`./tasks test_integration`
 
 Alternatively, you can use `play` button next to each test in IntelliJ (your IDE)
 
 Run the coverage tests with:
 
-`./tasks _test_coverage`
+`./tasks test_coverage`
 
 Run the dependency check tests with:
 
-`./tasks _dep`
+`./tasks dep`
 
 To run all the checks before committing with:
 
-`./tasks _test_all`
+`./tasks test_all`
 
 ### Config
 

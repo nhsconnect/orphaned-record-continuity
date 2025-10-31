@@ -38,18 +38,18 @@ export GP2GP_MESSENGER_REPOSITORY_ODS_CODE=deduction-ods
  
 ## Running the tests
 
-Run the unit tests by  running `./tasks _test_unit`
+Run the unit tests by  running `./tasks test_unit`
 or on your machine with `npm run test:unit`
 
 Run the integration tests with:
-`./tasks _test_integration`
+`./tasks test_integration`
 
 You can also run them with `npm run test:integration` but that will require some additional manual set-up
 
 
 Run the coverage tests (unit test and integration test)
 
-By running `./tasks _test_coverage`
+By running `./tasks test_coverage`
 
 or run `npm run test:coverage` on your machine
 

@@ -94,7 +94,7 @@ command="$1"
 case "${command}" in
   assemble_docker)
       configure_local_envs
-      ./tasks _assemble
+      ./tasks assemble
       configure_docker_repository_uri
       fetch_redaction_utils
       build_docker_image
@@ -105,70 +105,46 @@ case "${command}" in
       set_image_tag
       echo $IMAGE_TAG
       ;;
-  _build)
+  build)
       rm -rf build/
       ./gradlew build -x integration
       ;;
-  build)
-      ./tasks _build
-      ;;
-  _assemble)
+  assemble)
       rm -rf build/
       ./gradlew assemble
       ;;
-  assemble)
-      ./tasks _assemble
-      ;;
-  _test_unit)
-      ./gradlew test
-      ;;
   test_unit)
       configure_local_envs
-      ./tasks _test_unit
-      ;;
-  _test_integration)
-      ./gradlew --info integration
+      ./gradlew test
       ;;
   test_integration)
 #      ensure_prev_build_images_are_stopped
       configure_local_envs
-      ./tasks _test_integration
-      ;;
-  _test_coverage)
-      ./gradlew jacocoTestCoverageVerification
+      ./gradlew --info integration
       ;;
   test_coverage)
       ensure_prev_build_images_are_stopped
       configure_local_envs
-      ./tasks _test_coverage
+      ./gradlew jacocoTestCoverageVerification
       ;;
   fetch_utils)
       fetch_redaction_utils
       ;;
-  _code_quality)
-      ./gradlew check -x test -x integration
-      ;;
   code_quality)
       ensure_prev_build_images_are_stopped
       configure_local_envs
-      ./tasks _code_quality
-      ;;
-  _test_all)
-      ./gradlew test integration jacocoTestCoverageVerification check
+      ./gradlew check -x test -x integration
       ;;
   test_all)
       configure_local_envs
-      ./tasks _test_all
-      ;;
-  _run_sonar)
-      ./gradlew build sonar --info
+      ./gradlew test integration jacocoTestCoverageVerification check
       ;;
   run_sonar)
       ensure_prev_build_images_are_stopped
       _assume_environment_role $NHS_ENVIRONMENT
       configure_local_envs
       configure_sonar_environment_variable
-      ./tasks _run_sonar
+      ./gradlew build sonar --info
       ;;
   run_localstack_local)
       configure_local_envs
@@ -179,16 +155,13 @@ case "${command}" in
       set_image_tag
       promote_docker_image "$IMAGE_REPO_NAME:$IMAGE_TAG" "$NHS_ENVIRONMENT"
       ;;
-  _wait_ecs)
+  wait_ecs)
+      check_env
       _assume_environment_role $NHS_ENVIRONMENT
       aws ecs wait services-stable \
         --region $AWS_DEFAULT_REGION \
         --cluster $NHS_ENVIRONMENT-${NHS_SERVICE}-ecs-cluster \
         --service $NHS_ENVIRONMENT-${NHS_SERVICE}
-      ;;
-  wait_ecs)
-      check_env
-      ./tasks _wait_ecs
       ;;
   *)
       echo "Invalid command: '${command}'"

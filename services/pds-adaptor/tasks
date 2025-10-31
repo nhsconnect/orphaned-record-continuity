@@ -32,59 +32,38 @@ function configure_local_run_against_aws_env {
 
 command="$1"
 case "${command}" in
-  _build)
+  build)
       rm -rf build/
       ./gradlew build -x integration
       ;;
-  build)
-      ./tasks _build
-      ;;
-  _test_unit)
-      ./gradlew test
-      ;;
   test_unit)
       configure_local_envs
-      ./tasks _test_unit
+      ./gradlew test
       ;;
   test_unit_cached)
       configure_local_envs
-      ./tasks _test_unit
-      ;;
-  _test_integration)
-      ./gradlew --info integration
+      ./tasks test_unit
       ;;
   test_integration)
       configure_local_envs
-      ./tasks _test_integration
+      ./gradlew --info integration
       ;;
-  _test_performance)
+  test_performance)
+        check_env
         _assume_environment_role $NHS_ENVIRONMENT
         test_performance
         ;;
-  test_performance)
-        check_env
-        ./tasks _test_performance
-        ;;
-  _test_coverage)
-      ./gradlew jacocoTestCoverageVerification
-      ;;
   test_coverage)
       configure_local_envs
-      ./tasks _test_coverage
-      ;;
-  _code_quality)
-      ./gradlew check -x test -x integration
+      ./gradlew jacocoTestCoverageVerification
       ;;
   code_quality)
       configure_local_envs
-      ./tasks _code_quality
+      ./gradlew check -x test -x integration
       ;;
-  _test_all)
-    ./gradlew test integration jacocoTestCoverageVerification check
-    ;;
   test_all)
     configure_local_envs
-    ./tasks _test_all
+    ./gradlew test integration jacocoTestCoverageVerification check
     ;;
   run_local)
     configure_local_envs
@@ -96,43 +75,31 @@ case "${command}" in
     ;;
   tf)
       check_env
-      ./tasks _tf
-      ;;
-  _tf)
       tf_init
       bash
       ;;
-  _tf_plan)
+  tf_plan)
+      check_env
       _assume_environment_role $NHS_ENVIRONMENT
       tf_plan "$2"
       ;;
-  tf_plan)
-      check_env
-      ./tasks _tf_plan $2
-      ;;
-  _tf_apply)
-      _assume_environment_role $NHS_ENVIRONMENT
-      tf_apply
-      ;;
   tf_apply)
       check_env
-      ./tasks _tf_apply
+      _assume_environment_role $NHS_ENVIRONMENT
+      tf_apply
       ;;
   promote_docker_image)
       check_env
       set_image_tag
       promote_docker_image "$IMAGE_REPO_NAME:$IMAGE_TAG" "$NHS_ENVIRONMENT"
       ;;
-  _wait_ecs)
+  wait_ecs)
+      check_env
       _assume_environment_role $NHS_ENVIRONMENT
       aws ecs wait services-stable \
         --region $AWS_DEFAULT_REGION \
         --cluster $NHS_ENVIRONMENT-${NHS_SERVICE}-ecs-cluster \
         --service $NHS_ENVIRONMENT-${NHS_SERVICE}-service
-      ;;
-  wait_ecs)
-      check_env
-      ./tasks _wait_ecs
       ;;
   *)
       echo "Invalid command: '${command}'"

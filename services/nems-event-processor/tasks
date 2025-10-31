@@ -57,17 +57,17 @@ case "${command}" in
       rm -rf build/
       ./gradlew build -x integration
       ;;
-  _test_unit)
+  test_unit)
       ./gradlew test
       ;;
-  _test_integration)
+  test_integration)
       configure_local_envs
       ./gradlew --info integration
       ;;
-  _test_coverage)
+  test_coverage)
       gradle jacocoTestCoverageVerification
       ;;
-  _code_quality)
+  code_quality)
       gradle check -x test -x integration
       ;;
   test_all)

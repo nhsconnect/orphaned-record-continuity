@@ -114,61 +114,40 @@ case "${command}" in
       ;;
   build_docker)
       configure_envs
-      ./tasks _build
+      ./tasks build
       configure_docker_repository_uri
       fetch_redaction_utils
       build_docker_image
       echo "Pushing the Docker image... $REPOSITORY_URI:$IMAGE_TAG"
       docker push $REPOSITORY_URI:$IMAGE_TAG
       ;;
-  _build)
+  build)
       rm -rf build/
       ./gradlew assemble
       ;;
-  build)
-      ./tasks _build
-      ;;
-  _test_unit)
-      ./gradlew test
-      ;;
   test_unit)
-      ./tasks _test_unit
-      ;;
-  _test_integration)
-      ./gradlew --info integration
+      ./gradlew test
       ;;
   test_integration)
       configure_envs
       use_fake_aws_creds_for_localstack
       destroy_localstack
-      ./tasks _test_integration
-      ;;
-  _test_coverage)
-      ./gradlew jacocoTestCoverageVerification
+      ./gradlew --info integration
       ;;
   test_coverage)
       configure_envs
       destroy_localstack
-      ./tasks _test_coverage
-      ;;
-  _code_quality)
-      ./gradlew check -x test -x integration
+      ./gradlew jacocoTestCoverageVerification
       ;;
   code_quality)
       destroy_localstack
-      ./tasks _code_quality
-      ;;
-  _test_all)
-      ./gradlew test integration jacocoTestCoverageVerification check
+      ./gradlew check -x test -x integration
       ;;
   test_all)
       configure_envs
       use_fake_aws_creds_for_localstack
       destroy_localstack
-      ./tasks _test_all
-      ;;
-  _run_sonar)
-      ./gradlew build sonar --info
+      ./gradlew test integration jacocoTestCoverageVerification check
       ;;
   run_sonar)
       configure_envs
@@ -176,7 +155,7 @@ case "${command}" in
       configure_sonar_environment_variable
       use_fake_aws_creds_for_localstack
       destroy_localstack
-      ./tasks _run_sonar
+      ./gradlew build sonar --info
       ;;
   run_local)
       configure_envs
@@ -185,46 +164,34 @@ case "${command}" in
   run_localstack_local)
       docker-compose -f docker-compose.localstack-local.yaml up -d
       ;;
-  _tf)
+  tf)
+      check_env
       _assume_environment_role $NHS_ENVIRONMENT
       tf_init
       bash
       ;;
-  tf)
+  tf_plan)
       check_env
-      ./tasks _tf
-      ;;
-  _tf_plan)
       _assume_environment_role $NHS_ENVIRONMENT
       tf_plan $2
       ;;
-  tf_plan)
-      check_env
-      ./tasks _tf_plan $2
-      ;;
-  _tf_apply)
-      _assume_environment_role $NHS_ENVIRONMENT
-      tf_apply
-      ;;
   tf_apply)
       check_env
-      ./tasks _tf_apply
+      _assume_environment_role $NHS_ENVIRONMENT
+      tf_apply
       ;;
   promote_docker_image)
       check_env
       set_image_tag
       promote_docker_image "$IMAGE_REPO_NAME:$IMAGE_TAG" "$NHS_ENVIRONMENT"
       ;;
-  _wait_ecs)
+  wait_ecs)
+      check_env
       _assume_environment_role $NHS_ENVIRONMENT
       aws ecs wait services-stable \
         --region $AWS_DEFAULT_REGION \
         --cluster $NHS_ENVIRONMENT-${NHS_SERVICE}-ecs-cluster \
         --service $NHS_ENVIRONMENT-${NHS_SERVICE}
-      ;;
-  wait_ecs)
-      check_env
-      ./tasks _wait_ecs
       ;;
   *)
       echo "Invalid command: '${command}'"

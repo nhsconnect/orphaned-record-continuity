@@ -40,7 +40,7 @@ necessarily compatible*
 
 1. Run `npm install` to install all node dependencies.
 2. Configure local environment variables:
-    - run `./tasks _setup_test_integration_local`
+    - run `./tasks setup_test_integration_local`
 3. Run `npm run start:local`
 4. If successful, you will be able to reach the Swagger docs: [http://localhost:3000/swagger/](http://localhost:3000/swagger/)
 

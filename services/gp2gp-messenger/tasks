@@ -132,70 +132,50 @@ function generate_authorization_keys {
 
 command="$1"
 case "${command}" in
-  _dep)
+  dep)
       npm install
       npm run check-audit
       ;;
-  dep)
-      ./tasks _dep
-      ;;
-  _fix_dep)
+  fix_dep)
       npm install
       npm run resolve-audit
       ;;
-  fix_dep)
-      ./tasks _fix_dep
-      ;;
-  _list_outdated)
+  list_outdated)
       npm install
       npm outdated > outdated-dependencies.txt
-      ;;
-  list_outdated)
-      ./tasks _list_outdated
       ;;
   update_package_json)
       npx npm-check-updates -u
       ;;
-  _build)
+  build)
       rm -rf build/
       npm install
       npm run build
       ;;
-  build)
-      ./tasks _build
-      ;;
-  _test_lint)
+  test_lint)
       npm install
       npm run lint
       ;;
-  test_lint)
-      ./tasks _test_lint
-      ;;
-  _test_unit)
+  test_unit)
       npm install
       npm run test:unit
       ;;
-  test_unit)
-      ./tasks _test_unit
-      ;;
-  _test_integration)
+  test_integration)
+      configure_local_envs
       npm install
       npm run test:integration
       ;;
-  test_integration)
-      configure_local_envs
-      ./tasks _test_integration
-      ;;
   sanity_check)
-      ./tasks _sanity_check
-      ;;
-  _sanity_check)
       configure_domain_infix
       check_env
       nslookup "gp2gp-messenger.${DOMAIN_INFIX}.patient-deductions.nhs.uk"
       curl -i --fail "https://gp2gp-messenger.${DOMAIN_INFIX}.patient-deductions.nhs.uk/health"
       ;;
-  _test_functional)
+  test_functional)
+      check_env
+      _assume_environment_role $NHS_ENVIRONMENT
+      configure_aws_service_e2e_test_auth_keys_for_gp2gp_messenger
+      configure_service_url
       npm install
       if [[ "${NHS_ENVIRONMENT}" == "dev" ]]; then
         npm run test:functional:opentest
@@ -203,31 +183,18 @@ case "${command}" in
         npm run test:functional
       fi
       ;;
-  test_functional)
-      check_env
-      _assume_environment_role $NHS_ENVIRONMENT
-      configure_aws_service_e2e_test_auth_keys_for_gp2gp_messenger
-      configure_service_url
-      ./tasks _test_functional
-      ;;
-  _test_e2e)
-      npm install
-      npm run test:e2e
-      ;;
   test_e2e)
       check_env
       _assume_environment_role $NHS_ENVIRONMENT
       configure_aws_service_e2e_test_auth_keys_for_gp2gp_messenger
       configure_service_url
-      ./tasks _test_e2e
-      ;;
-  _test_coverage)
       npm install
-      npm run test:coverage
+      npm run test:e2e
       ;;
   test_coverage)
       configure_local_envs
-      ./tasks _test_coverage
+      npm install
+      npm run test:coverage
       ;;
   fetch_utils)
       fetch_redaction_utils
@@ -244,82 +211,59 @@ case "${command}" in
       echo "Pushing the Docker image... $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG"
       docker push $REPOSITORY_URI:$IMAGE_TAG
       ;;
-  _test_docker)
-      npm install
-      npm run test:docker
-      ;;
   test_docker)
       configure_docker_repository_uri
       set_image_tag
       configure_service_url
-      ./tasks _test_docker
+      npm install
+      npm run test:docker
       ;;
   test_docker_local)
       configure_local_envs
       set_image_tag
-      ./tasks _test_docker
-      ;;
-  _generate_authorization_keys)
-      generate_authorization_keys
+      npm install
+      npm run test:docker
       ;;
   generate_authorization_keys)
-      ./tasks _generate_authorization_keys
+      generate_authorization_keys
       ;;
-  _tf)
+  tf)
       check_env
       tf_init
       bash
       ;;
-  tf)
-      ./tasks _tf
-      ;;
-  _tf_plan_certs)
+  tf_plan_certs)
+      check_env
       _assume_environment_role $NHS_ENVIRONMENT
       tf_plan "$2" true
       ;;
-  tf_plan_certs)
+  tf_apply_certs)
       check_env
-      ./tasks _tf_plan_certs $2
-      ;;
-  _tf_apply_certs)
       _assume_environment_role $NHS_ENVIRONMENT
       tf_apply_certs
       ;;
-  tf_apply_certs)
+  tf_plan)
       check_env
-      ./tasks _tf_apply_certs
-      ;;
-  _tf_plan)
       _assume_environment_role $NHS_ENVIRONMENT
       tf_plan "$2"
       ;;
-  tf_plan)
-      check_env
-      ./tasks _tf_plan $2
-      ;;
-  _tf_apply)
-      _assume_environment_role $NHS_ENVIRONMENT
-      tf_apply
-      ;;
   tf_apply)
       check_env
-      ./tasks _tf_apply
+      _assume_environment_role $NHS_ENVIRONMENT
+      tf_apply
       ;;
   promote_docker_image)
       check_env
       set_image_tag
       promote_docker_image "$IMAGE_REPO_NAME:$IMAGE_TAG" "$NHS_ENVIRONMENT"
       ;;
-  _wait_ecs)
+  wait_ecs)
+      check_env
       _assume_environment_role $NHS_ENVIRONMENT
       aws ecs wait services-stable \
         --region $AWS_DEFAULT_REGION \
         --cluster $NHS_ENVIRONMENT-${NHS_SERVICE}-ecs-cluster \
         --service $NHS_ENVIRONMENT-${NHS_SERVICE}-service
-      ;;
-  wait_ecs)
-      check_env
-      ./tasks _wait_ecs
       ;;
   *)
       echo "Invalid command: '${command}'"

@@ -66,11 +66,8 @@ do
     dep)
         ./tasks check-deps > audit-output.txt
         ;;
-    _generate-requirements)
-        pipenv lock -r > requirements.txt
-        ;;
     generate-requirements)
-        ./tasks _generate-requirements
+        pipenv lock -r > requirements.txt
         ;;
     build-docker)
         build_docker

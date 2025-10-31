@@ -1,0 +1,383 @@
+#!/usr/bin/env bash
+
+set -Eeo pipefail
+
+###########################
+# Local Config Parameters #
+###########################
+
+AWS_DEFAULT_REGION=eu-west-2
+
+# used for docker push and promotion, but beware ecs tasks managed by terraform var.component+name
+IMAGE_REPO_NAME=deductions/ehr-out-service
+
+# used to identify ssm param names
+GIT_REPO_NAME=prm-repo-ehr-out-service
+
+# NB change of this will change state file name (need to use -migrate-state on inits) as well as expected ecs-cluster names in this file
+export OLD_SERVICE=repo-to-gp
+export NHS_SERVICE=ehr-out-service
+
+AWS_HELPERS_VERSION=0.2.27
+echo "AWS helper scripts version: $AWS_HELPERS_VERSION"
+
+###########################
+# Shared utils            #
+###########################
+
+function download_util() {
+  local UTIL_VERSION=$1
+  local UTIL_FILENAME=$2
+
+  local UTIL_FILEPATH="utils/$UTIL_VERSION/$UTIL_FILENAME"
+
+  mkdir -p "utils/$UTIL_VERSION"
+  if [[ ! -f $UTIL_FILEPATH ]];then
+    wget --quiet -O $UTIL_FILEPATH https://github.com/nhsconnect/prm-deductions-support-infra/releases/download/${UTIL_VERSION}/${UTIL_FILENAME}
+  fi
+  chmod +x $UTIL_FILEPATH
+
+  echo "$UTIL_FILEPATH"
+}
+
+AWS_HELPERS_FILE=$(download_util $AWS_HELPERS_VERSION aws-helpers)
+source $AWS_HELPERS_FILE
+
+####################################
+# Instance (Environment) Variables #
+####################################
+
+function check_env {
+  if [[ -z "${NHS_ENVIRONMENT}" ]]; then
+    echo "Must set NHS_ENVIRONMENT"
+    exit 1
+  fi
+}
+
+function check_nhs_service {
+  if [[ -z "${NHS_SERVICE}" ]]; then
+    echo "Must set NHS_SERVICE"
+    exit 1
+  fi
+}
+
+function configure_service_url {
+  if [[ -z "${NHS_ENVIRONMENT}" ]]; then
+    export SERVICE_URL=http://${NHS_SERVICE}:3000
+  else
+    export SERVICE_URL="https://${NHS_SERVICE}.${NHS_ENVIRONMENT}.non-prod.patient-deductions.nhs.uk"
+  fi
+}
+
+function set_image_tag() {
+  if [[ -z "${GO_DEPENDENCY_LABEL_APP}" ]]; then
+    export IMAGE_TAG=${GO_PIPELINE_LABEL:-$(git rev-parse HEAD | cut -c 1-8)}
+  else
+    export IMAGE_TAG=${GO_DEPENDENCY_LABEL_APP}
+  fi
+}
+
+function prepare_local_envs_for_ide {
+  envs=$( printenv | grep "REPOSITORY_URI" && \
+          printenv | grep "SERVICE_URL"
+  )
+  echo "Paste these env vars to your Intelij run template:"
+  echo $envs | tr ' ' ';'
+}
+
+function generate_secure_string {
+  local length=$1
+  LC_CTYPE="en_GB.UTF8" tr -dc 'A-Za-z0-9' < /dev/urandom | head -c $length ; echo
+}
+
+function configure_local_envs {
+  export GP2GP_MESSENGER_AUTHORIZATION_KEYS=auth-key-1
+  export EHR_REPO_AUTHORIZATION_KEYS=auth-key-2
+  export GP2GP_MESSENGER_SERVICE_URL="www.notreal.com"
+  export EHR_REPO_SERVICE_URL="www.alsonotreal.com"
+  export REPOSITORY_URI=$IMAGE_REPO_NAME
+  export LOCALSTACK_URL="http://localstack:4566"
+  export AWS_REGION=${AWS_DEFAULT_REGION}
+
+  export DYNAMODB_NAME=local-test-db
+  export DYNAMODB_LOCAL_ENDPOINT=http://dynamodb-local:8000/
+  export AWS_ACCESS_KEY_ID=$(generate_secure_string 20)
+  export AWS_SECRET_ACCESS_KEY=$(generate_secure_string 20)
+
+  configure_service_url
+  set_image_tag
+}
+
+function configure_local_envs_for_docker_test {
+  export GP2GP_MESSENGER_AUTHORIZATION_KEYS=auth-key-1
+  export EHR_REPO_AUTHORIZATION_KEYS=auth-key-2
+  export GP2GP_MESSENGER_SERVICE_URL="www.notreal.com"
+  export EHR_REPO_SERVICE_URL="www.alsonotreal.com"
+  export REPOSITORY_URI=$IMAGE_REPO_NAME
+  export LOCALSTACK_URL="http://localstack:4566"
+  export AWS_REGION=${AWS_DEFAULT_REGION}
+
+  export DYNAMODB_NAME=local-test-db
+  export DYNAMODB_LOCAL_ENDPOINT=http://dynamodb-local:8000/
+
+  configure_service_url
+  set_image_tag
+}
+
+function get_aws_account_id {
+    AWS_ACCOUNT_ID=$(dojo -c Dojofile-infra "aws sts get-caller-identity | jq -r .Account")
+}
+
+############################
+# Docker Related Functions #
+############################
+
+function docker_login {
+  echo Logging in to Amazon ECR...
+  eval $(dojo -c Dojofile-infra "aws ecr get-login --no-include-email --region $AWS_DEFAULT_REGION")
+}
+
+function configure_docker_repository_uri {
+  docker_login
+  get_aws_account_id
+  export REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/$IMAGE_REPO_NAME
+}
+
+function build_docker_image() {
+  echo Build started on $(date)
+  set_image_tag
+  echo Building the Docker image...
+  docker build --build-arg UTILS_VERSION=$AWS_HELPERS_VERSION -t $REPOSITORY_URI:latest -t $REPOSITORY_URI:$IMAGE_TAG .
+  echo Build completed on `date`
+}
+
+function die_container_die {
+  local filter=$1
+  local moniker=$2
+
+  echo docker processes running: $(docker ps)
+
+  DOCKER_CONTAINERS_MATCHING_FILTER=$(docker ps --filter $filter -q)
+
+  echo docker processes looking like $2 running matching filter: $DOCKER_CONTAINERS_MATCHING_FILTER
+
+  if [ -z "$DOCKER_CONTAINERS_MATCHING_FILTER" ]; then
+    echo no $moniker nonsense going on, cool
+  else
+    echo trying to kill $moniker...
+    docker stop $DOCKER_CONTAINERS_MATCHING_FILTER
+  fi
+}
+
+function destroy_localstack {
+  die_container_die publish=4566 localstack
+}
+
+#######################
+# Terraform Functions #
+#######################
+
+export TF_BUCKET="prm-deductions-${NHS_ENVIRONMENT}-terraform-state"
+function tf_init_with_options {
+  local state_key=$1
+  local tf_options=$2
+
+  terraform init $tf_options \
+    -backend-config key="${state_key}" \
+    -backend-config bucket="${TF_BUCKET}" \
+    -backend-config dynamodb_table="prm-deductions-${NHS_ENVIRONMENT}-terraform-table" \
+    -backend-config region=${AWS_DEFAULT_REGION}
+}
+
+function tf_init_or_rename {
+  local state_key_suffix=$1
+
+  echo checking state file exists
+  set +e
+  aws s3 ls ${TF_BUCKET}/$NHS_SERVICE-${state_key_suffix}
+  local state_file_exists=$?
+  if [ $state_file_exists -ne 0 ]; then
+    echo cannot find state file so assuming rename
+    local RENAME_STATE=true
+  else
+    echo state file exists
+  fi
+  set -e
+
+  if [ -z "${RENAME_STATE}" ]; then
+    tf_init_with_options $NHS_SERVICE-${state_key_suffix} -reconfigure
+  else
+    echo doing one-time renaming of state file
+    if [ -z "${OLD_SERVICE}" ]; then
+      echo OLD_SERVICE needs to be set if RENAME_STATE being used
+      exit 88
+    fi
+    tf_init_with_options $OLD_SERVICE-${state_key_suffix} -reconfigure
+
+    tf_init_with_options $NHS_SERVICE-${state_key_suffix} '-migrate-state -force-copy'
+  fi
+}
+
+
+function tf_init {
+  check_env
+  cd terraform
+
+  tf_init_or_rename ${NHS_ENVIRONMENT}/terraform.tfstate
+}
+
+function tf_plan {
+  operation=$1
+  set_image_tag
+
+  tf_init
+  terraform get # modules
+  if [[ "${operation}" == "create" ]]; then
+    terraform plan -var task_image_tag=$IMAGE_TAG -var-file=$NHS_ENVIRONMENT.tfvars -out="nhs_deployment.tfplan"
+  elif [[ "${operation}" == "destroy" ]]; then
+    terraform plan -var task_image_tag=$IMAGE_TAG -var-file=$NHS_ENVIRONMENT.tfvars -out="nhs_deployment.tfplan" -destroy
+  else
+    echo "Unknown operation (should be create or destroy), got: ${operation}"
+    exit 1
+  fi
+}
+
+function tf_apply {
+  tf_init
+  terraform get # modules
+  terraform apply nhs_deployment.tfplan
+  terraform output -json > tf-out.json
+}
+
+###########
+# Testing #
+###########
+
+function test_functional {
+  check_env
+  npm install
+  if [[ $NHS_ENVIRONMENT == "dev" ]]; then
+    npm run test:health
+  else
+    npm run test:functional
+  fi
+}
+
+###########
+## TASKS ##
+###########
+
+command="$1"
+case "${command}" in
+  dep)
+      npm install
+      npm run check-audit
+      ;;
+  fix_dep)
+      npm install
+      npm run resolve-audit
+      ;;
+  list_outdated)
+      npm install
+      npm outdated > outdated-dependencies.txt
+      ;;
+  destroy_localstack)
+      destroy_localstack
+      ;;
+  test_lint)
+      npm install
+      npm run lint || true # retain lint for WIP tracking and advisory but don't break build
+      ;;
+  test_unit)
+      npm install
+      npm run test:unit
+      ;;
+  setup_test_integration_local)
+      configure_local_envs
+      sh scripts/create-dynamodb-table.sh
+      prepare_local_envs_for_ide
+      ;;
+  test_integration)
+      configure_local_envs
+      destroy_localstack
+      npm install
+      sh scripts/create-dynamodb-table.sh
+      npm run test:integration
+      ;;
+  run_localstack_local)
+      docker-compose -f docker-compose.localstack-local.yaml up -d
+      ;;
+  test_functional)
+      configure_service_url
+      test_functional
+      ;;
+  test_coverage)
+      configure_local_envs
+      destroy_localstack
+      npm install
+      sh scripts/create-dynamodb-table.sh
+      npm run test:coverage
+      ;;
+  test_coverage_github_action)
+      npm install
+      npm run test:coverage-unit-test-only
+      ;;
+  build)
+      rm -rf build
+      npm install
+      npm run build
+      ;;
+  build_docker_local)
+      configure_local_envs_for_docker_test
+      build_docker_image
+      ;;
+  build_docker)
+      configure_docker_repository_uri
+      build_docker_image
+      echo "Pushing the Docker image... $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG"
+      docker push $REPOSITORY_URI:$IMAGE_TAG
+      ;;
+  test_docker)
+      configure_local_envs_for_docker_test
+      configure_docker_repository_uri
+      npm install
+      sh scripts/create-dynamodb-table.sh
+      npm run test:docker
+      ;;
+  run_docker_local)
+      configure_local_envs
+      dojo -c Dojofile-dtest
+      ;;
+  tf_plan)
+      check_env
+      _assume_environment_role $NHS_ENVIRONMENT
+      tf_plan "$2"
+      ;;
+  tf_apply)
+      check_env
+      _assume_environment_role $NHS_ENVIRONMENT
+      tf_apply
+      ;;
+  create_secrets)
+      check_env
+      _assume_environment_role $NHS_ENVIRONMENT
+      ;;
+  promote_docker_image)
+      check_env
+      set_image_tag
+      promote_docker_image "$IMAGE_REPO_NAME:$IMAGE_TAG" "$NHS_ENVIRONMENT"
+      ;;
+  wait_ecs)
+      check_env
+      _assume_environment_role $NHS_ENVIRONMENT
+      aws ecs wait services-stable \
+        --region $AWS_DEFAULT_REGION \
+        --cluster $NHS_ENVIRONMENT-${NHS_SERVICE} \
+        --service $NHS_ENVIRONMENT-${NHS_SERVICE}
+      ;;
+  *)
+      echo "Invalid command: '${command}'"
+      exit 1
+      ;;
+esac
+set +e

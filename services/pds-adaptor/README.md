@@ -27,7 +27,7 @@ They can be found `utils` directory after running any task from `tasks` file.
 Run the unit tests with:
 
 ```
-./tasks _test_unit
+./tasks test_unit
 ```
 
 In your terminal with

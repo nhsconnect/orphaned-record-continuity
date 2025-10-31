@@ -87,28 +87,28 @@ function build_docker_image() {
 
 command="$1"
 case "${command}" in
-  _dep)
+  dep)
       npm install
       npm run check-audit
       ;;
-  _fix_dep)
+  fix_dep)
       npm install
       npm run resolve-audit
       ;;
-  _list_outdated)
+  list_outdated)
       npm install
       npm outdated > outdated-dependencies.txt
       ;;
-  _build)
+  build)
       rm -rf build/
       npm install
       npm run build
       ;;
-  _setup_test_integration_local)
+  setup_test_integration_local)
     configure_local_envs
     prepare_local_envs_for_ide
     ;;
-  _test_all)
+  test_all)
       npm install
       npm run lint
       npm run test:unit
@@ -116,7 +116,7 @@ case "${command}" in
       sh scripts/create-dynamodb-table.sh
       npm run test:integration
       ;;
-  _test_coverage)
+  test_coverage)
       npm install
       sh scripts/create-dynamodb-table.sh
       npm run test:coverage
@@ -129,13 +129,13 @@ case "${command}" in
       configure_local_envs_for_docker_test
       build_docker_image
       ;;
-  _sanity_check)
+  sanity_check)
       configure_domain_infix
       check_env
       nslookup "ehr-repo.${DOMAIN_INFIX}.patient-deductions.nhs.uk"
       curl -i --fail "https://ehr-repo.${DOMAIN_INFIX}.patient-deductions.nhs.uk/health"
       ;;
-  _wait_ecs)
+  wait_ecs)
       aws ecs wait services-stable \
         --region $AWS_DEFAULT_REGION \
         --cluster $NHS_ENVIRONMENT-ehr-repo-ecs-cluster \
