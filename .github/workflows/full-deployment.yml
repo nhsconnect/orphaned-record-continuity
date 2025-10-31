@@ -71,7 +71,6 @@ jobs:
       is_deployment: ${{ inputs.is_deployment }}
     secrets: inherit
 
-
   nems-event-processor:
     name: NEMs Event Processor CI
     uses: './.github/workflows/base-java-service-jobs.yml'
