@@ -128,31 +128,12 @@ describe('POST /health-record-requests/:nhsNumber', () => {
   });
 
   describe('NHS Number prefix checks', () => {
-    // TODO: REMOVE THESE TESTS
-    // it('should not allow a health record request and return 404 when nhs number prefix is empty', async () => {
-    //   initializeConfig.mockReturnValueOnce({ nhsNumberPrefix: '' });
-    //   const res = await request(app).post('/health-record-requests/1234567890').send(body);
-    //   expect(res.status).toBe(422);
-    //   expect(logWarning).toHaveBeenCalledWith(
-    //     'Health record request failed as no nhs number prefix env variable has been set'
-    //   );
-    // });
-    //
-    // it('should not allow a health record request and return 404 when nhs number prefix is undefined', async () => {
-    //   initializeConfig.mockReturnValueOnce({});
-    //   const res = await request(app).post('/health-record-requests/1234567890').send(body);
-    //   expect(res.status).toBe(422);
-    //   expect(logWarning).toHaveBeenCalledWith(
-    //     'Health record request failed as no nhs number prefix env variable has been set'
-    //   );
-    // });
-
     it('should not allow a health record request when the nhs number does not start with the expected prefix', async () => {
       initializeConfig.mockReturnValueOnce({ nhsNumberPrefix: '999' });
       const res = await request(app).post('/health-record-requests/1234567890').send(body);
       expect(res.status).toBe(422);
       expect(logWarning).toHaveBeenCalledWith(
-        'Health record request failed as nhs number does not start with expected prefix: 999'
+        'Health record request failed as nhs number does not start with enforced prefix: 999'
       );
     });
 

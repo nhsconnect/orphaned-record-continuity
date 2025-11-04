@@ -42,12 +42,10 @@ export const healthRecordRequests = async (req, res) => {
       return;
     }
 
-    if (
-      odsCodeNotInSafeList(
-        practiceOdsCode,
-        requestEhrOnlyForSafeListedOdsCodesToggle,
-        safeListedOdsCodes
-      )
+    if (!odsCodeInSafeList(
+      practiceOdsCode,
+      requestEhrOnlyForSafeListedOdsCodesToggle,
+      safeListedOdsCodes)
     ) {
       const notASafeListedOdsCodeMessage = 'The ODS code provided is not safe listed.';
 
@@ -96,33 +94,30 @@ export const buildEhrRequest = async (req, conversationId, practiceAsid) => {
 };
 
 const checkNhsNumberPrefix = (nhsNumberPrefix, nhsNumber) => {
-  if (!nhsNumberPrefix) {
-    // TODO: Found that previous team has hardcoded checking for synthetic patients only. We need to process real patients.
-    // logWarning('Health record request failed as no nhs number prefix env variable has been set');
-    // return false;
-    logInfo('NhsNumberPrefix has not been set.');
-    return true;
-  }
-  if (!nhsNumber.startsWith(nhsNumberPrefix)) {
+  if (nhsNumberPrefix && !nhsNumber.startsWith(nhsNumberPrefix)) {
     logWarning(
-      `Health record request failed as nhs number does not start with expected prefix: ${nhsNumberPrefix}`
+      `Health record request failed as nhs number does not start with enforced prefix: ${nhsNumberPrefix}`
     );
     return false;
   }
   return true;
 };
 
-const odsCodeNotInSafeList = (
+const odsCodeInSafeList = (
   practiceOdsCode,
   requestEhrOnlyForSafeListedOdsCodesToggle,
   safeListedOdsCodes
 ) => {
   logInfo(
-    'process only safe listed ODS code toggle is : ' + requestEhrOnlyForSafeListedOdsCodesToggle
+    'process only safe listed ODS code toggle is: ' + requestEhrOnlyForSafeListedOdsCodesToggle
   );
-  if (requestEhrOnlyForSafeListedOdsCodesToggle) {
-    const caseInsensitiveOdsCode = new RegExp(practiceOdsCode, 'i');
-    return !caseInsensitiveOdsCode.test(safeListedOdsCodes);
+
+  if (!requestEhrOnlyForSafeListedOdsCodesToggle) {
+    return true;
   }
-  return false;
+
+  const safelistedOdsCodesUppercased = safeListedOdsCodes
+    .toUpperCase()
+    .split(',');
+  return safelistedOdsCodesUppercased.includes(practiceOdsCode.toUpperCase());
 };
