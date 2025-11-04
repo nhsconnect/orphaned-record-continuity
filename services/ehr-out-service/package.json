@@ -38,7 +38,7 @@
     "moment-timezone": "^0.5.45",
     "npm-audit-resolver": "3.0.0-7",
     "pg": "^8.8.0",
-    "sqs-consumer": "^5.7.0",
+    "sqs-consumer": "^7.2.0",
     "swagger-ui-express": "^4.3.0",
     "traverse": "^0.6.6",
     "utils-deep-clone": "^0.0.3",

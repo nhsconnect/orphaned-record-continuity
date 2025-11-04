@@ -5,12 +5,12 @@ NHS_SERVICE=ehr-out-service
 echo fetching api keys
 
 # Iterates through all api keys in ssm for producer
-for key in $(aws ssm get-parameters-by-path --region ${AWS_DEFAULT_REGION} --path "/repo/${NHS_ENVIRONMENT}/user-input/api-keys/${NHS_SERVICE}/" --recursive --query 'Parameters[].Name' --output text)
+for key in $(awslocal ssm get-parameters-by-path --region ${AWS_DEFAULT_REGION} --path "/repo/${NHS_ENVIRONMENT}/user-input/api-keys/${NHS_SERVICE}/" --recursive --query 'Parameters[].Name' --output text)
 do
   echo fetching api key
 
   # Gets the value of each api key
-  value=$(aws ssm get-parameter --region ${AWS_DEFAULT_REGION} --with-decryption --name "${key}" --query Parameter.Value --output text)
+  value=$(awslocal ssm get-parameter --region ${AWS_DEFAULT_REGION} --with-decryption --name "${key}" --query Parameter.Value --output text)
   # Splits ssm path to get consumer name
   IFS='/' read -ra ADDR <<< "${key}"
 

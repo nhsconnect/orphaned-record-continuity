@@ -91,19 +91,19 @@ function generate_secure_string {
 }
 
 function configure_local_envs {
-  export GP2GP_MESSENGER_AUTHORIZATION_KEYS=auth-key-1
-  export EHR_REPO_AUTHORIZATION_KEYS=auth-key-2
+  export GP2GP_MESSENGER_AUTHORIZATION_KEYS="auth-key-1"
+  export EHR_REPO_AUTHORIZATION_KEYS="auth-key-2"
   export GP2GP_MESSENGER_SERVICE_URL="www.notreal.com"
   export EHR_REPO_SERVICE_URL="www.alsonotreal.com"
-  export REPOSITORY_URI=$IMAGE_REPO_NAME
   export LOCALSTACK_URL="http://localstack:4566"
-  export AWS_REGION=${AWS_DEFAULT_REGION}
-
-  export DYNAMODB_NAME=local-test-db
-  export DYNAMODB_LOCAL_ENDPOINT=http://dynamodb-local:8000/
-  export AWS_ACCESS_KEY_ID=$(generate_secure_string 20)
-  export AWS_SECRET_ACCESS_KEY=$(generate_secure_string 20)
-
+  export REPOSITORY_URI="deductions/ehr-out-service"
+  export DYNAMODB_NAME="local-test-db"
+  export DYNAMODB_LOCAL_ENDPOINT="http://localhost:4573/"
+  export AWS_ACCESS_KEY_ID="LSIA5678901234567890"
+  export AWS_SECRET_ACCESS_KEY="LSIA5678901234567890"
+  export NHS_ENVIRONMENT="local"
+  export AWS_REGION="eu-west-2"
+  export AWS_DEFAULT_REGION="eu-west-2"
   configure_service_url
   set_image_tag
 }
@@ -113,9 +113,9 @@ function configure_local_envs_for_docker_test {
   export EHR_REPO_AUTHORIZATION_KEYS=auth-key-2
   export GP2GP_MESSENGER_SERVICE_URL="www.notreal.com"
   export EHR_REPO_SERVICE_URL="www.alsonotreal.com"
-  export REPOSITORY_URI=$IMAGE_REPO_NAME
   export LOCALSTACK_URL="http://localstack:4566"
   export AWS_REGION=${AWS_DEFAULT_REGION}
+  export REPOSITORY_URI="deductions/ehr-out-service"
 
   export DYNAMODB_NAME=local-test-db
   export DYNAMODB_LOCAL_ENDPOINT=http://dynamodb-local:8000/
@@ -151,7 +151,7 @@ function build_docker_image() {
   echo Build completed on `date`
 }
 
-function die_container_die {
+function kill_container {
   local filter=$1
   local moniker=$2
 
@@ -170,9 +170,14 @@ function die_container_die {
 }
 
 function destroy_localstack {
-  die_container_die publish=4566 localstack
+  kill_container publish=4566 localstack
 }
-
+function run_localstack {
+  docker-compose -f docker-compose.localstack-local.yaml up -d
+}
+function run_localstack_itest {
+  docker-compose -f docker-compose-itest.yml up -d
+}
 #######################
 # Terraform Functions #
 #######################
@@ -277,6 +282,9 @@ case "${command}" in
       npm install
       npm run resolve-audit
       ;;
+  run_localstack_itest)
+      run_localstack_itest
+      ;;
   list_outdated)
       npm install
       npm outdated > outdated-dependencies.txt
@@ -298,14 +306,15 @@ case "${command}" in
       prepare_local_envs_for_ide
       ;;
   test_integration)
-      configure_local_envs
       destroy_localstack
+      configure_local_envs
+      run_localstack
       npm install
       sh scripts/create-dynamodb-table.sh
       npm run test:integration
       ;;
   run_localstack_local)
-      docker-compose -f docker-compose.localstack-local.yaml up -d
+      run_localstack
       ;;
   test_functional)
       configure_service_url
