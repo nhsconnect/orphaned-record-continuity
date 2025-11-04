@@ -171,6 +171,7 @@ function kill_container {
 
 function destroy_localstack {
   kill_container publish=4566 localstack
+  kill_container publish=4573 dynamodb-local
 }
 function run_localstack {
   docker-compose -f docker-compose.localstack-local.yaml up -d
@@ -308,7 +309,7 @@ case "${command}" in
   test_integration)
       destroy_localstack
       configure_local_envs
-      run_localstack
+      run_localstack_itest
       npm install
       sh scripts/create-dynamodb-table.sh
       npm run test:integration
