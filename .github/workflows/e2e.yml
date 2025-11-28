@@ -1,7 +1,7 @@
 name: End to End Test
 
 permissions:
-  contents: read  # Required for actions/checkout
+  contents: read # Required for actions/checkout
   id-token: write # Required for requesting the JWT
   pull-requests: write # Required to write comments
 
@@ -9,7 +9,6 @@ on:
   workflow_call:
 
   workflow_dispatch:
-
 
 jobs:
   e2e:
@@ -21,13 +20,13 @@ jobs:
       - name: Checkout End to End
         uses: actions/checkout@v5
         with:
-          repository: 'nhsconnect/prm-repo-e2e-tests'
+          repository: "nhsconnect/prm-repo-e2e-tests"
 
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'adopt'
-          java-version: '21'
+          distribution: "adopt"
+          java-version: "21"
 
       - name: Build
         run: |

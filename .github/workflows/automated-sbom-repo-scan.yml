@@ -1,11 +1,11 @@
-name: 'Z-AUTOMATED: SBOM Repo Scan'
+name: "Z-AUTOMATED: SBOM Repo Scan"
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 
 permissions:
-  actions: read   # Required for anchore/sbom-action
+  actions: read # Required for anchore/sbom-action
   contents: write # Required for anchore/sbom-action
   id-token: write # Required for requesting the JWT
   pull-requests: write
@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
 
       - uses: anchore/sbom-action@v0
         with:
@@ -51,14 +51,14 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number,
             })
-            
+
             const botComment = comments.find(comment => {
               return comment.user.type === 'Bot' && comment.body.includes('Code security issues found')
             })
 
             // 2. Prepare format of the comment
             const output = `### Code security issues found
-            
+
             View full details [here](https://github.com/${{ github.repository }}/security/code-scanning?query=is%3Aopen+pr%3A${{ github.event.pull_request.number }}).`;
 
             // 3. If we have a comment, update it, otherwise create a new one
@@ -70,7 +70,7 @@ jobs:
                 body: output
               })
             }
-            
+
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
@@ -89,7 +89,7 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number,
             })
-            
+
             const botComment = comments.find(comment => {
               return comment.user.type === 'Bot' && comment.body.includes('Code security issues found')
             })

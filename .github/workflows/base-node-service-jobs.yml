@@ -54,7 +54,7 @@ jobs:
       - name: Start LocalStack
         uses: LocalStack/setup-localstack@v0.2.4
         with:
-          install-awslocal: 'true'
+          install-awslocal: "true"
 
       # https://docs.aws.amazon.com/cli/latest/reference/dynamodb/create-table.html
       - name: Create AWS resources
@@ -99,7 +99,7 @@ jobs:
     environment: ${{ inputs.environment }}
     defaults:
       run:
-        working-directory: './services/${{ inputs.service }}'
+        working-directory: "./services/${{ inputs.service }}"
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -123,8 +123,8 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: NPM Build
-        run: npm run build  
-        
+        run: npm run build
+
       - name: Docker Build and Tag
         env:
           REF_NAME: ${{ github.ref_name }}
@@ -160,8 +160,7 @@ jobs:
           if [ -n "${REF_NAME:-}" ]; then
             REF_TAG="${REF_NAME//\//-}"
             docker push "$REGISTRY/$REPOSITORY:$REF_TAG"
-          fi  
-          
+          fi
 
   deploy_infra:
     name: Deploy Infrastructure

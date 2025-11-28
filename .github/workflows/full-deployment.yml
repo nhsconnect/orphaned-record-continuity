@@ -6,7 +6,7 @@ on:
       environment:
         description: "Which environment would you like to deploy to?"
         type: choice
-        options: 
+        options:
           - dev
           - pre-prod
           - prod
@@ -26,17 +26,16 @@ jobs:
   ehr-repo:
     name: EHR Repo CI
     secrets: inherit
-    uses: './.github/workflows/base-node-service-jobs.yml'
+    uses: "./.github/workflows/base-node-service-jobs.yml"
     with:
       service: ehr-repo
       environment: ${{ inputs.environment }}
       is_deployment: ${{ inputs.is_deployment }}
 
-
   ehr-out-service:
     name: EHR Out Service CI
     secrets: inherit
-    uses: './.github/workflows/base-node-service-jobs.yml'
+    uses: "./.github/workflows/base-node-service-jobs.yml"
     with:
       service: ehr-out-service
       environment: ${{ inputs.environment }}
@@ -44,7 +43,7 @@ jobs:
 
   mesh-inbox-s3-forwarder:
     name: MESH Inbox S3 Forwarder Ci
-    uses: './.github/workflows/base-python-service-jobs.yml'
+    uses: "./.github/workflows/base-python-service-jobs.yml"
     with:
       service: mesh-inbox-s3-forwarder
       environment: ${{ inputs.environment }}
@@ -54,8 +53,8 @@ jobs:
 
   mesh-forwarder:
     name: MESH Forwarder CI
-    needs: [ mesh-inbox-s3-forwarder ]
-    uses: './.github/workflows/base-python-service-jobs.yml'
+    needs: [mesh-inbox-s3-forwarder]
+    uses: "./.github/workflows/base-python-service-jobs.yml"
     with:
       service: mesh-forwarder
       environment: ${{ inputs.environment }}
@@ -64,7 +63,7 @@ jobs:
 
   gp2gp-messenger:
     name: GP2GP Messenger CI
-    uses: './.github/workflows/base-node-service-jobs.yml'
+    uses: "./.github/workflows/base-node-service-jobs.yml"
     with:
       service: gp2gp-messenger
       environment: ${{ inputs.environment }}
@@ -73,7 +72,7 @@ jobs:
 
   nems-event-processor:
     name: NEMs Event Processor CI
-    uses: './.github/workflows/base-java-service-jobs.yml'
+    uses: "./.github/workflows/base-java-service-jobs.yml"
     with:
       service: nems-event-processor
       environment: ${{ inputs.environment }}
@@ -83,7 +82,7 @@ jobs:
 
   ehr-transfer-service:
     name: EHR Transfer Service CI
-    uses: './.github/workflows/base-java-service-jobs.yml'
+    uses: "./.github/workflows/base-java-service-jobs.yml"
     with:
       service: ehr-transfer-service
       environment: ${{ inputs.environment }}
@@ -93,17 +92,17 @@ jobs:
 
   pds-adaptor:
     name: PDS Adaptor CI
-    uses: './.github/workflows/base-java-service-jobs.yml'
+    uses: "./.github/workflows/base-java-service-jobs.yml"
     with:
       service: pds-adaptor
       environment: ${{ inputs.environment }}
       is_deployment: ${{ inputs.is_deployment }}
-      java_version: '11'
+      java_version: "11"
     secrets: inherit
 
   re-registration-service:
     name: Re-registration Service CI
-    uses: './.github/workflows/base-java-service-jobs.yml'
+    uses: "./.github/workflows/base-java-service-jobs.yml"
     with:
       service: ehr-transfer-service
       environment: ${{ inputs.environment }}
@@ -113,7 +112,7 @@ jobs:
 
   suspension-service:
     name: Suspension Service CI
-    uses: './.github/workflows/base-java-service-jobs.yml'
+    uses: "./.github/workflows/base-java-service-jobs.yml"
     with:
       service: suspension-service
       environment: ${{ inputs.environment }}

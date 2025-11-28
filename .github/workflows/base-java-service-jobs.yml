@@ -19,7 +19,7 @@ on:
         default: false
       java_version:
         type: string
-        default: '21'
+        default: "21"
         required: false
 
 permissions:
@@ -32,17 +32,17 @@ jobs:
     name: Run Tests
     runs-on: ubuntu-latest
     defaults:
-      run:             
-        working-directory: './services/${{ inputs.service }}'
+      run:
+        working-directory: "./services/${{ inputs.service }}"
     steps:
       - name: Checkout
         uses: actions/checkout@v5
-        
+
       - name: Set up JDK ${{ inputs.java_version }}
         uses: actions/setup-java@v3
         with:
-          distribution: 'temurin'
-          java-version: '${{ inputs.java_version }}'
+          distribution: "temurin"
+          java-version: "${{ inputs.java_version }}"
           cache: gradle
 
       - name: Run Localstack on Docker
@@ -62,7 +62,7 @@ jobs:
     environment: ${{ inputs.environment }}
     defaults:
       run:
-        working-directory: './services/${{ inputs.service }}'
+        working-directory: "./services/${{ inputs.service }}"
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -70,8 +70,8 @@ jobs:
       - name: Set up JDK ${{ inputs.java_version }}
         uses: actions/setup-java@v3
         with:
-          distribution: 'temurin'
-          java-version: '${{ inputs.java_version }}'
+          distribution: "temurin"
+          java-version: "${{ inputs.java_version }}"
           cache: gradle
 
       - name: Configure AWS Credentials (Read/Write)
@@ -124,7 +124,7 @@ jobs:
           if [ -n "${REF_NAME:-}" ]; then
             REF_TAG="${REF_NAME//\//-}"
             docker push "$REGISTRY/$REPOSITORY:$REF_TAG"
-          fi  
+          fi
 
   deploy_infra:
     name: Deploy Infrastructure
