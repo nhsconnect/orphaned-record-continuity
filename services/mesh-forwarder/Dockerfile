@@ -1,6 +1,6 @@
-ARG IMAGE_TAG=image_tag \
-    ENV=bucket
-FROM ${ENV}.dkr.ecr.eu-west-2.amazonaws.com/deductions/mesh-inbox-s3-forwarder:latest
+# TODO PRM-495 reintroduce IMAGE_TAG later - We've hardcoded the last image tag as a quick fix. THIS SHOULD NOT BE A PERMANENT SOLUTION.
+#ARG IMAGE_TAG=image_tag
+FROM registrations/mesh-inbox-s3-forwarder:3c468a36
 
 RUN whoami
 USER root
