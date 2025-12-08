@@ -1,10 +1,21 @@
-# TODO PRM-495 reintroduce IMAGE_TAG later - We've hardcoded the last image tag as a quick fix. THIS SHOULD NOT BE A PERMANENT SOLUTION.
-#ARG IMAGE_TAG=image_tag
-FROM registrations/mesh-inbox-s3-forwarder:3c468a36
+FROM python:3.9.6-alpine
 
-RUN whoami
-USER root
-RUN apk --no-cache add bash
+ENV POLL_FREQUENCY=60
+ENV FORWARDER_HOME=/mesh-forwarder
+ARG IMAGE_TAG=image_tag \
+    ENV=bucket
+ENV BUILD_TAG=${IMAGE_TAG}
+
+RUN addgroup --system mesh && adduser --ingroup mesh --system mesh
+COPY . /mesh-forwarder
+
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+RUN pip install pipenv
+RUN cd /mesh-forwarder && pipenv install
+
+RUN chown -R mesh:mesh /mesh-forwarder
+
 USER mesh
 
 ENTRYPOINT ["python", "-m", "awsmesh.entrypoint"]

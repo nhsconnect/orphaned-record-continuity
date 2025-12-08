@@ -31,7 +31,7 @@ jobs:
       service: ehr-repo
       environment: ${{ inputs.environment }}
       is_deployment: ${{ inputs.is_deployment }}
-
+     
   ehr-out-service:
     name: EHR Out Service CI
     secrets: inherit

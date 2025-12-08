@@ -2,9 +2,6 @@ name: Services CI
 
 on:
   push:
-    branches:
-      - main
-      - PRM-495
     paths:
       - "services/ehr-repo/**"
       - "services/mesh-forwarder/**"
@@ -19,13 +16,6 @@ on:
       - ".github/workflows/service-ci.yml"
 
   pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened
-    branches:
-      - main
-      - PRM-495
     paths:
       - "services/ehr-repo/**"
       - "services/mesh-forwarder/**"
