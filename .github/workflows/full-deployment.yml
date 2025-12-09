@@ -93,10 +93,11 @@ jobs:
     name: Re-registration Service CI
     uses: "./.github/workflows/base-java-service-jobs.yml"
     with:
-      service: ehr-transfer-service
+      service: re-registration-service
       environment: ${{ inputs.environment }}
       is_deployment: ${{ inputs.is_deployment }}
       requires_localstack: true
+      image_prefix: repo/
     secrets: inherit
 
   suspension-service:
@@ -107,6 +108,7 @@ jobs:
       environment: ${{ inputs.environment }}
       is_deployment: ${{ inputs.is_deployment }}
       requires_localstack: true
+      image_prefix: repo/
     secrets: inherit
 
   e2e-testing:
