@@ -25,6 +25,7 @@ black = "==21.9b0"
 mypy = "~=0.9"
 types-requests = "2.25"
 click = "~=8.0.4"
+mesh_client = "~=1.4"
 
 [requires]
 python_version = "3.9"
