@@ -98,7 +98,7 @@ jobs:
   nems-event-processor:
     name: NEMs Event Processor CI
     needs: [get_changed_files]
-    if: contains(needs.get_changed_files.outputs.changed, 'services/nems-event-processor') || contains(needs.get_changed_files.outputs.changed, './github/')
+    if: contains(needs.get_changed_files.outputs.changed, 'services/nems-event-processor') || contains(needs.get_changed_files.outputs.changed, '.github/')
     uses: "./.github/workflows/base-java-service-jobs.yml"
     with:
       service: nems-event-processor
