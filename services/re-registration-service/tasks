@@ -79,11 +79,6 @@ function configure_sonar_environment_variable {
   export SONAR_TOKEN=$(_get_aws_ssm_secret "/repo/dev/output/re-registration-service/sonar_token")
 }
 
-function use_fake_aws_creds_for_localstack {
-  export AWS_ACCESS_KEY_ID=fake-key-id
-  export AWS_SECRET_ACCESS_KEY=fake-key
-}
-
 function destroy_localstack {
   echo docker processes running: $(docker ps)
 
@@ -130,7 +125,6 @@ case "${command}" in
       ;;
   test_integration)
       configure_envs
-      use_fake_aws_creds_for_localstack
       destroy_localstack
       ./gradlew --info integration
       ;;
@@ -145,15 +139,14 @@ case "${command}" in
       ;;
   test_all)
       configure_envs
-      use_fake_aws_creds_for_localstack
-      destroy_localstack
+      docker-compose -f docker-compose.localstack-local.yaml up -d
       ./gradlew test integration jacocoTestCoverageVerification check
       ;;
   run_sonar)
       configure_envs
       _assume_environment_role $NHS_ENVIRONMENT
       configure_sonar_environment_variable
-      use_fake_aws_creds_for_localstack
+      
       destroy_localstack
       ./gradlew build sonar --info
       ;;
