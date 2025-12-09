@@ -21,6 +21,10 @@ on:
         type: string
         default: "21"
         required: false
+      image_prefix:
+        type: string
+        default: "deductions/"
+        required: false
 
 permissions:
   pull-requests: write
@@ -93,7 +97,7 @@ jobs:
         env:
           REF_NAME: ${{ github.ref_name }}
           REGISTRY: ${{ steps.ecr-login.outputs.registry }}
-          REPOSITORY: deductions/${{ inputs.service }}
+          REPOSITORY: ${{inputs.image_prefix}}${{ inputs.service }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
           set -euo pipefail
@@ -109,7 +113,7 @@ jobs:
         env:
           REF_NAME: ${{ github.ref_name }}
           REGISTRY: ${{ steps.ecr-login.outputs.registry }}
-          REPOSITORY: deductions/${{ inputs.service }}
+          REPOSITORY: ${{ inputs.image_prefix }}${{ inputs.service }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
           set -euo pipefail

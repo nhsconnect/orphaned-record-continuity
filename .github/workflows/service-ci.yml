@@ -98,7 +98,7 @@ jobs:
   nems-event-processor:
     name: NEMs Event Processor CI
     needs: [get_changed_files]
-    if: contains(needs.get_changed_files.outputs.changed, 'services/nems-event-processor') || contains(needs.get_changed_files.outputs.changed, './github/')
+    if: contains(needs.get_changed_files.outputs.changed, 'services/nems-event-processor') || contains(needs.get_changed_files.outputs.changed, '.github/')
     uses: "./.github/workflows/base-java-service-jobs.yml"
     with:
       service: nems-event-processor
@@ -137,10 +137,11 @@ jobs:
     if: contains(needs.get_changed_files.outputs.changed, 'services/re-registration-service') || contains(needs.get_changed_files.outputs.changed, '.github/')
     uses: "./.github/workflows/base-java-service-jobs.yml"
     with:
-      service: ehr-transfer-service
+      service: re-registration-service
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
       requires_localstack: true
+      image_prefix: repo/
     secrets: inherit
 
   suspension-service:
@@ -153,6 +154,7 @@ jobs:
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
       requires_localstack: true
+      image_prefix: repo/
     secrets: inherit
 
   e2e-testing:
