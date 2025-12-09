@@ -41,19 +41,8 @@ jobs:
       environment: ${{ inputs.environment }}
       is_deployment: ${{ inputs.is_deployment }}
 
-  mesh-inbox-s3-forwarder:
-    name: MESH Inbox S3 Forwarder Ci
-    uses: "./.github/workflows/base-python-service-jobs.yml"
-    with:
-      service: mesh-inbox-s3-forwarder
-      environment: ${{ inputs.environment }}
-      is_deployment: ${{ inputs.is_deployment }}
-      deploy_infra: false
-    secrets: inherit
-
   mesh-forwarder:
     name: MESH Forwarder CI
-    needs: [mesh-inbox-s3-forwarder]
     uses: "./.github/workflows/base-python-service-jobs.yml"
     with:
       service: mesh-forwarder
