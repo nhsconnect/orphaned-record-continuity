@@ -1,0 +1,264 @@
+#!/usr/bin/env bash
+
+set -Eeo pipefail
+
+###########################
+# Local Config Parameters #
+###########################
+
+AWS_DEFAULT_REGION=eu-west-2
+IMAGE_REPO_NAME=repo/suspension-service
+AWS_HELPERS_VERSION=0.2.27
+echo "AWS helper scripts version: $AWS_HELPERS_VERSION"
+
+###########################
+# Shared utils            #
+###########################
+
+function download_util() {
+  local UTIL_VERSION=$1
+  local UTIL_FILENAME=$2
+
+  local UTIL_FILEPATH="utils/$UTIL_VERSION/$UTIL_FILENAME"
+
+  mkdir -p "utils/$UTIL_VERSION"
+  if [[ ! -f $UTIL_FILEPATH ]];then
+    wget --quiet -O $UTIL_FILEPATH https://github.com/nhsconnect/prm-deductions-support-infra/releases/download/${UTIL_VERSION}/${UTIL_FILENAME}
+  fi
+  chmod +x $UTIL_FILEPATH
+
+  echo "$UTIL_FILEPATH"
+}
+
+function fetch_redaction_utils() {
+  download_util $AWS_HELPERS_VERSION run-with-redaction.sh
+  download_util $AWS_HELPERS_VERSION redactor
+}
+
+AWS_HELPERS_FILE="utils/$AWS_HELPERS_VERSION/aws-helpers"
+
+mkdir -p "utils/$AWS_HELPERS_VERSION"
+if [[ ! -f $AWS_HELPERS_FILE ]];then
+  wget --quiet -O $AWS_HELPERS_FILE https://github.com/nhsconnect/prm-deductions-support-infra/releases/download/${AWS_HELPERS_VERSION}/aws-helpers
+fi
+chmod +x $AWS_HELPERS_FILE
+source $AWS_HELPERS_FILE
+
+####################################
+# Instance (Environment) Variables #
+####################################
+
+function check_env {
+  if [[ -z "${NHS_ENVIRONMENT}" ]]; then
+    echo "Must set NHS_ENVIRONMENT"
+    exit 1
+  fi
+
+  if [[ -z "${NHS_SERVICE}" ]]; then
+    echo "Must set NHS_SERVICE"
+    exit 1
+  fi
+}
+
+function set_image_tag() {
+  if [[ -z "${GO_DEPENDENCY_LABEL_APP}" ]]; then
+    export IMAGE_TAG=${GO_PIPELINE_LABEL:-$(git rev-parse HEAD | cut -c 1-8)}
+  else
+    export IMAGE_TAG=${GO_DEPENDENCY_LABEL_APP}
+  fi
+}
+
+function get_aws_account_id {
+    AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account)
+}
+
+function configure_envs {
+  export LOCALSTACK_URL="http://localhost:4566"
+  export AWS_REGION="eu-west-2"
+  export AWS_DEFAULT_REGION="eu-west-2"
+  export S3_BUCKET_NAME="test-bucket"
+  export DYNAMODB_NAME="local-test-db"
+  export DYNAMODB_LOCAL_ENDPOINT="http://localhost:4566"
+  export AWS_ACCESS_KEY_ID="LSIA5678901234567890"
+  export AWS_SECRET_ACCESS_KEY="LSIA5678901234567890"
+  export NHS_ENVIRONMENT="local"
+}
+
+function configure_sonar_environment_variable {
+  export SONAR_TOKEN=$(_get_aws_ssm_secret "/repo/dev/output/suspensions-service/sonar_token")
+}
+
+#######################
+# Terraform Functions #
+#######################
+
+function tf_init {
+  check_env
+  cd terraform
+
+  terraform init -reconfigure \
+    -backend-config key="${NHS_SERVICE}-${NHS_ENVIRONMENT}/terraform.tfstate" \
+    -backend-config bucket="prm-deductions-${NHS_ENVIRONMENT}-terraform-state" \
+    -backend-config dynamodb_table="prm-deductions-${NHS_ENVIRONMENT}-terraform-table" \
+    -backend-config region=${AWS_DEFAULT_REGION}
+}
+
+function tf_plan {
+  operation=$1
+
+  if [[ -z "${IMAGE_TAG}" ]]; then
+    set_image_tag
+  fi
+
+  tf_init
+
+  terraform get # modules
+  if [[ "${operation}" == "create" ]]; then
+    terraform plan -var task_image_tag=$IMAGE_TAG -var-file="configs/${NHS_SERVICE}/${NHS_SERVICE}.tfvars" -var-file="configs/${NHS_SERVICE}/$NHS_ENVIRONMENT.tfvars" -out="${NHS_SERVICE}.tfplan"
+  elif [[ "${operation}" == "destroy" ]]; then
+    terraform plan -var task_image_tag=$IMAGE_TAG -var-file="configs/${NHS_SERVICE}/${NHS_SERVICE}.tfvars" -var-file="configs/${NHS_SERVICE}/$NHS_ENVIRONMENT.tfvars" -out="${NHS_SERVICE}.tfplan" -destroy
+  else
+    echo "Unknown operation (should be create or destroy), got: ${operation}"
+    exit 1
+  fi
+}
+
+function tf_apply {
+  tf_init
+  terraform get # modules
+  terraform apply ${NHS_SERVICE}.tfplan
+  terraform output -json > tf-out.json
+}
+
+function configure_local_envs {
+  export LOCALSTACK_URL="http://localhost:4566"
+  export AWS_REGION="eu-west-2"
+  export AWS_DEFAULT_REGION="eu-west-2"
+  export S3_BUCKET_NAME="test-bucket"
+  export DYNAMODB_NAME="local-test-db"
+  export DYNAMODB_LOCAL_ENDPOINT="http://localhost:4566"
+  export AWS_ACCESS_KEY_ID="LSIA5678901234567890"
+  export AWS_SECRET_ACCESS_KEY="LSIA5678901234567890"
+  export NHS_ENVIRONMENT="local"
+}
+
+function run_localstack_local {
+  docker compose -f docker-compose.localstack-local.yaml up -d
+}
+
+function destroy_localstack {
+  echo docker processes running: $(docker ps)
+
+  DOCKER_CONTAINERS_ON_PORT=$(docker ps --filter publish=4566 -q)
+
+  echo docker processes running on expected localstack port: $DOCKER_CONTAINERS_ON_PORT
+
+  if [ -z "$DOCKER_CONTAINERS_ON_PORT" ]; then
+    echo no localstack nonsense going on, cool
+  else
+    echo trying to kill localstack...
+    docker stop $DOCKER_CONTAINERS_ON_PORT
+  fi
+}
+
+###########
+## TASKS ##
+###########
+
+command="$1"
+case "${command}" in
+  fetch_utils)
+      fetch_redaction_utils
+      ;;
+  destroy_localstack)
+      destroy_localstack
+      ;;
+  build_docker)
+      configure_envs
+      ./tasks build
+      configure_docker_repository_uri
+      fetch_redaction_utils
+      build_docker_image
+      echo "Pushing the Docker image... $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG"
+      docker push $REPOSITORY_URI:$IMAGE_TAG
+      ;;
+  build)
+      rm -rf build/
+      ./gradlew assemble
+      ;;
+  test_unit)
+      ./gradlew test
+      ;;
+  test_integration)
+      configure_envs
+      ./gradlew --info integration
+      ;;
+  test_coverage)
+      configure_envs
+      destroy_localstack
+      ./gradlew jacocoTestCoverageVerification
+      ;;
+  code_quality)
+      destroy_localstack
+      ./gradlew check -x test -x integration
+      ;;
+  test_all)
+      configure_envs
+      ./gradlew clean test integration jacocoTestCoverageVerification check
+      ;;
+  run_local)
+      configure_envs
+      ./gradlew bootRun
+      ;;
+  run_localstack_local)
+      run_localstack_local
+      ;;
+  tf)
+      check_env
+      _assume_environment_role $NHS_ENVIRONMENT
+      tf_init
+      bash
+      ;;
+  tf_plan_suspension)
+      export NHS_SERVICE=suspension-service
+      check_env
+      export NHS_SERVICE=suspension-service
+      _assume_environment_role $NHS_ENVIRONMENT
+      tf_plan $2
+      ;;
+  tf_plan)
+      check_env
+      _assume_environment_role $NHS_ENVIRONMENT
+      tf_plan $2
+      ;;
+  tf_apply)
+      check_env
+      _assume_environment_role $NHS_ENVIRONMENT
+      tf_apply
+      ;;
+  promote_docker_image)
+      check_env
+      set_image_tag
+      promote_docker_image "$IMAGE_REPO_NAME:$IMAGE_TAG" "$NHS_ENVIRONMENT"
+      ;;
+  wait_ecs)
+      check_env
+      _assume_environment_role $NHS_ENVIRONMENT
+      aws ecs wait services-stable \
+        --region $AWS_DEFAULT_REGION \
+        --cluster $NHS_ENVIRONMENT-${NHS_SERVICE}-ecs-cluster \
+        --service $NHS_ENVIRONMENT-${NHS_SERVICE}
+      ;;
+  run_sonar)
+      destroy_localstack
+      _assume_environment_role $NHS_ENVIRONMENT
+      configure_envs
+      configure_sonar_environment_variable
+      ./gradlew build sonar --info
+      ;;
+  *)
+      echo "Invalid command: '${command}'"
+      exit 1
+      ;;
+esac
+set +e

@@ -1,0 +1,77 @@
+@startuml
+
+!include https://gist.githubusercontent.com/fishey2/c9d9d7c7426d3701959789c10e96fdb0/raw/2afa46ecf5e126ad563693a8dccfa3e7ee46a50c/nhs_stylesheet.iuml
+
+participant "GP2GP Messenger" as gp2gp
+participant "Inbound MQ" as mq
+participant "MHS Adapter" as mhs
+participant "PDS"
+
+' The process to obtain the patient information
+' This is only required to obtain the PDS ID
+
+' PDS Information is in MIM 4.2.00
+autonumber "<b>[100]"
+activate gp2gp
+    group Retreive Patient
+
+        note over gp2gp
+            Sending System
+                ASID: 200000001161
+        end note
+
+        note over PDS
+            Receiving System (PDS)
+                ASID: 928942012545
+        end note
+
+        gp2gp -> mhs : PDS Retreival Query (QUPA_IN000008UK02)
+            note left: Requires:\n\ * NHS Number\n\ * Sending ASID\n\ * Receiving ASID
+            activate mhs
+
+
+            mhs -> PDS : Wrapped QUPA_IN000008UK02
+                activate PDS
+
+        else When Sending and Receiving ASID in message is wrong
+
+            <-[NHS_ERROR]- PDS
+                note right
+                    Message is lost:
+
+                    Possibly is unable to lookup the
+                    endpoint information for the
+                    receiving system to send the
+                    response back.
+                end note
+        else When incorrect information is provided to retrieve patient
+            PDS -[NHS_ERROR]-> mhs : Wrapped MCCI_IN010000UK13
+
+            mhs -[NHS_ERROR]-> mq : Negative Acknowledgement (MCCI_IN010000UK13)
+                activate mq
+
+            mq -> gp2gp : Consume Message (MCCI_IN010000UK13)
+                note left
+                    Example Reasons:
+                    * IU003 - Mandatory Field Missing
+                        - No additional information
+                end note
+        else 202
+
+            PDS -> mhs : Wrapped PRPA_MT040101UK31
+                deactivate PDS
+
+        mhs -> mq : PDS Successful Retreival (PRPA_MT040101UK31)
+            deactivate mhs
+
+        mq -> gp2gp : Consume Message (PRPA_MT040101UK31)
+            note left
+            Extract:
+            * PDS ID
+            * PDS Serial Change Number
+            end note
+            deactivate mq
+    end
+deactivate gp2gp
+
+@enduml

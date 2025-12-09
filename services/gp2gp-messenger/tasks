@@ -1,0 +1,273 @@
+#!/bin/bash
+
+set -Eeo pipefail
+
+###########################
+# Local Config Parameters #
+###########################
+
+AWS_DEFAULT_REGION=eu-west-2
+IMAGE_REPO_NAME=deductions/gp2gp-messenger
+export NHS_SERVICE=gp2gp-messenger
+AWS_HELPERS_VERSION=0.2.27
+echo "AWS helper scripts version: $AWS_HELPERS_VERSION"
+
+###########################
+# Shared utils            #
+###########################
+
+function download_util() {
+  local UTIL_VERSION=$1
+  local UTIL_FILENAME=$2
+
+  local UTIL_FILEPATH="utils/$UTIL_VERSION/$UTIL_FILENAME"
+
+  mkdir -p "utils/$UTIL_VERSION"
+  if [[ ! -f $UTIL_FILEPATH ]];then
+    wget --quiet -O $UTIL_FILEPATH https://github.com/nhsconnect/prm-deductions-support-infra/releases/download/${UTIL_VERSION}/${UTIL_FILENAME}
+  fi
+  chmod +x $UTIL_FILEPATH
+
+  echo "$UTIL_FILEPATH"
+}
+
+function fetch_redaction_utils() {
+  download_util $AWS_HELPERS_VERSION run-with-redaction.sh
+  download_util $AWS_HELPERS_VERSION redactor
+}
+
+AWS_HELPERS_FILE=$(download_util $AWS_HELPERS_VERSION aws-helpers)
+source $AWS_HELPERS_FILE
+
+
+####################################
+# Instance (Environment) Variables #
+####################################
+
+function check_env {
+  if [[ -z "${NHS_ENVIRONMENT}" ]]; then
+    echo "Must set NHS_ENVIRONMENT"
+    exit 1
+  fi
+}
+
+function check_nhs_service {
+  if [[ -z "${NHS_SERVICE}" ]]; then
+    echo "Must set NHS_SERVICE"
+    exit 1
+  fi
+}
+
+function configure_domain_infix {
+  if [[ "${NHS_ENVIRONMENT}" == "prod" ]]; then
+    export DOMAIN_INFIX="prod"
+  else
+    export DOMAIN_INFIX="${NHS_ENVIRONMENT}.non-prod"
+  fi
+}
+
+function configure_local_envs {
+  export E2E_TEST_AUTHORIZATION_KEYS_FOR_GP2GP_MESSENGER=auth-key-2
+  export REPOSITORY_URI=$IMAGE_REPO_NAME
+  configure_service_url
+}
+
+function configure_domain_infix {
+  if [[ "${NHS_ENVIRONMENT}" == "prod" ]]; then
+    export DOMAIN_INFIX="prod"
+  else
+    export DOMAIN_INFIX="${NHS_ENVIRONMENT}.non-prod"
+  fi
+}
+
+function configure_service_url {
+  configure_domain_infix
+  if [[ -z "${NHS_ENVIRONMENT}" ]]; then
+    export SERVICE_URL="http://${NHS_SERVICE}:3000"
+  else
+    export SERVICE_URL="https://${NHS_SERVICE}.${DOMAIN_INFIX}.patient-deductions.nhs.uk"
+  fi
+}
+
+function set_image_tag() {
+  export IMAGE_TAG=$(git rev-parse HEAD | cut -c 1-8)
+}
+
+function get_aws_account_id {
+    AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account)
+}
+
+function configure_aws_service_e2e_test_auth_keys_for_gp2gp_messenger {
+    parameter_name="/repo/${NHS_ENVIRONMENT}/user-input/api-keys/${NHS_SERVICE}/e2e-test"
+    export E2E_TEST_AUTHORIZATION_KEYS_FOR_GP2GP_MESSENGER=$(_get_aws_ssm_secret ${parameter_name})
+}
+
+####################
+# Script Functions #
+####################
+
+function generate_authorization_keys {
+  check_env
+  secret_id="/repo/${NHS_ENVIRONMENT}/user-input/gp2gp-messenger-authorization-keys"
+  value=$(openssl rand -base64 24  | tr -d "/@\'+")
+  set +e
+  aws ssm get-parameter --region $AWS_DEFAULT_REGION --name "$secret_id" | jq -r ".Parameter.Value" > /dev/null
+  if [[ $? == 0 ]]; then
+    echo "Authorization keys already exist"
+  else
+    set -e
+    echo "Authorization keys do not exist. Creating..."
+    aws ssm put-parameter \
+     --region $AWS_DEFAULT_REGION \
+     --name "$secret_id" \
+     --type SecureString \
+     --overwrite \
+     --value "$value"
+  fi
+}
+
+###########
+## TASKS ##
+###########
+
+command="$1"
+case "${command}" in
+  dep)
+      npm install
+      npm run check-audit
+      ;;
+  fix_dep)
+      npm install
+      npm run resolve-audit
+      ;;
+  list_outdated)
+      npm install
+      npm outdated > outdated-dependencies.txt
+      ;;
+  update_package_json)
+      npx npm-check-updates -u
+      ;;
+  build)
+      rm -rf build/
+      npm install
+      npm run build
+      ;;
+  test_lint)
+      npm install
+      npm run lint
+      ;;
+  test_unit)
+      npm install
+      npm run test:unit
+      ;;
+  test_integration)
+      configure_local_envs
+      npm install
+      npm run test:integration
+      ;;
+  sanity_check)
+      configure_domain_infix
+      check_env
+      nslookup "gp2gp-messenger.${DOMAIN_INFIX}.patient-deductions.nhs.uk"
+      curl -i --fail "https://gp2gp-messenger.${DOMAIN_INFIX}.patient-deductions.nhs.uk/health"
+      ;;
+  test_functional)
+      check_env
+      _assume_environment_role $NHS_ENVIRONMENT
+      configure_aws_service_e2e_test_auth_keys_for_gp2gp_messenger
+      configure_service_url
+      npm install
+      if [[ "${NHS_ENVIRONMENT}" == "dev" ]]; then
+        npm run test:functional:opentest
+      else
+        npm run test:functional
+      fi
+      ;;
+  test_e2e)
+      check_env
+      _assume_environment_role $NHS_ENVIRONMENT
+      configure_aws_service_e2e_test_auth_keys_for_gp2gp_messenger
+      configure_service_url
+      npm install
+      npm run test:e2e
+      ;;
+  test_coverage)
+      configure_local_envs
+      npm install
+      npm run test:coverage
+      ;;
+  fetch_utils)
+      fetch_redaction_utils
+      ;;
+  build_docker_local)
+      configure_local_envs
+      fetch_redaction_utils
+      build_docker_image
+      ;;
+  build_docker)
+      configure_docker_repository_uri
+      fetch_redaction_utils
+      build_docker_image
+      echo "Pushing the Docker image... $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG"
+      docker push $REPOSITORY_URI:$IMAGE_TAG
+      ;;
+  test_docker)
+      configure_docker_repository_uri
+      set_image_tag
+      configure_service_url
+      npm install
+      npm run test:docker
+      ;;
+  test_docker_local)
+      configure_local_envs
+      set_image_tag
+      npm install
+      npm run test:docker
+      ;;
+  generate_authorization_keys)
+      generate_authorization_keys
+      ;;
+  tf)
+      check_env
+      tf_init
+      bash
+      ;;
+  tf_plan_certs)
+      check_env
+      _assume_environment_role $NHS_ENVIRONMENT
+      tf_plan "$2" true
+      ;;
+  tf_apply_certs)
+      check_env
+      _assume_environment_role $NHS_ENVIRONMENT
+      tf_apply_certs
+      ;;
+  tf_plan)
+      check_env
+      _assume_environment_role $NHS_ENVIRONMENT
+      tf_plan "$2"
+      ;;
+  tf_apply)
+      check_env
+      _assume_environment_role $NHS_ENVIRONMENT
+      tf_apply
+      ;;
+  promote_docker_image)
+      check_env
+      set_image_tag
+      promote_docker_image "$IMAGE_REPO_NAME:$IMAGE_TAG" "$NHS_ENVIRONMENT"
+      ;;
+  wait_ecs)
+      check_env
+      _assume_environment_role $NHS_ENVIRONMENT
+      aws ecs wait services-stable \
+        --region $AWS_DEFAULT_REGION \
+        --cluster $NHS_ENVIRONMENT-${NHS_SERVICE}-ecs-cluster \
+        --service $NHS_ENVIRONMENT-${NHS_SERVICE}-service
+      ;;
+  *)
+      echo "Invalid command: '${command}'"
+      exit 1
+      ;;
+esac
+set +e

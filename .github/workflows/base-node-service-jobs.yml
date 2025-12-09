@@ -1,0 +1,174 @@
+name: Base Node Services Build and Deploy
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        default: dev
+        required: true
+      service:
+        type: string
+        required: true
+      is_deployment:
+        type: boolean
+        default: false
+        required: true
+
+
+permissions:
+  pull-requests: write
+  id-token: write
+  contents: read
+
+env:
+  S3_BUCKET_NAME: test-bucket
+  LOCALSTACK_URL: http://localhost:4566
+  DYNAMODB_NAME: local-test-db
+  DYNAMODB_LOCAL_ENDPOINT: http://localhost:4566
+  AWS_ACCESS_KEY_ID: LSIA5678901234567890
+  AWS_SECRET_ACCESS_KEY: LSIA5678901234567890
+  SERVICE_URL: http://localhost:3000
+
+jobs:
+  run_tests:
+    name: Lint, Unit, and Integration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract branch name
+        shell: bash
+        run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+        id: extract_branch
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        working-directory: ./services/${{ inputs.service }}
+        run: npm install
+
+      - name: Start LocalStack
+        uses: LocalStack/setup-localstack@v0.2.4
+        with:
+          install-awslocal: "true"
+
+      # https://docs.aws.amazon.com/cli/latest/reference/dynamodb/create-table.html
+      - name: Create AWS resources
+        run: |
+          awslocal dynamodb create-table --region ${{ vars.AWS_REGION }} --cli-input-json file://services/ehr-repo/scripts/local-test-db-scheme.json
+          awslocal s3 mb s3://$S3_BUCKET_NAME --region ${{ vars.AWS_REGION }}
+
+      - name: Run Unit Tests and Lint Checks
+        working-directory: ./services/${{ inputs.service }}
+        env:
+          S3_BUCKET_NAME: test-bucket
+          LOCALSTACK_URL: http://localhost:4566
+          DYNAMODB_NAME: local-test-db
+          DYNAMODB_LOCAL_ENDPOINT: http://localhost:4566
+          AWS_ACCESS_KEY_ID: LSIA5678901234567890
+          AWS_SECRET_ACCESS_KEY: LSIA5678901234567890
+          SERVICE_URL: http://localhost:3000
+          NHS_ENVIRONMENT: local
+          EHR_URL: http://localhost:3000
+          AUTHORIZATION_KEYS: auth-key-1
+        run: npm run test
+
+      - name: Run Integration Tests
+        working-directory: ./services/${{ inputs.service }}
+        env:
+          S3_BUCKET_NAME: test-bucket
+          LOCALSTACK_URL: http://localhost:4566
+          DYNAMODB_NAME: local-test-db
+          DYNAMODB_LOCAL_ENDPOINT: http://localhost:4566
+          AWS_ACCESS_KEY_ID: LSIA5678901234567890
+          AWS_SECRET_ACCESS_KEY: LSIA5678901234567890
+          SERVICE_URL: http://localhost:3000
+          NHS_ENVIRONMENT: local
+          EHR_URL: http://localhost:3000
+          AUTHORIZATION_KEYS: auth-key-1
+        run: npm run test:integration
+
+  build_and_publish:
+    name: Build and Publish
+    needs: [run_tests]
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    defaults:
+      run:
+        working-directory: "./services/${{ inputs.service }}"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install
+      - name: Configure AWS Credentials (Read/Write)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.IAM_ROLE }}
+          aws-region: ${{ vars.AWS_REGION }}
+          mask-aws-account-id: true
+          role-skip-session-tagging: true
+
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: NPM Build
+        run: npm run build
+
+      - name: Docker Build and Tag
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          REPOSITORY: deductions/${{ inputs.service }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          TAG_ARGS=(-t "$REGISTRY/$REPOSITORY:$IMAGE_TAG" -t "$REGISTRY/$REPOSITORY:latest")
+          if [ -n "${REF_NAME:-}" ]; then
+            REF_TAG="${REF_NAME//\//-}"
+            TAG_ARGS+=(-t "$REGISTRY/$REPOSITORY:$REF_TAG")
+          fi
+          docker build "${TAG_ARGS[@]}" --build-arg BUILD_TAG="$IMAGE_TAG" .
+
+      - name: Docker Publish
+        if: ${{ inputs.is_deployment }}
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          REPOSITORY: deductions/${{ inputs.service }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          TAG_ARGS=(-t "$REGISTRY/$REPOSITORY:$IMAGE_TAG" -t "$REGISTRY/$REPOSITORY:latest")
+          if [ -n "${REF_NAME:-}" ]; then
+            REF_TAG="${REF_NAME//\//-}"
+            TAG_ARGS+=(-t "$REGISTRY/$REPOSITORY:$REF_TAG")
+          fi
+          docker push "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
+          docker push "$REGISTRY/$REPOSITORY:latest"
+
+          if [ -n "${REF_NAME:-}" ]; then
+            REF_TAG="${REF_NAME//\//-}"
+            docker push "$REGISTRY/$REPOSITORY:$REF_TAG"
+          fi
+
+  deploy_infra:
+    name: Deploy Infrastructure
+    needs: [build_and_publish]
+    uses: nhsconnect/orphaned-record-continuity-infrastructure/.github/workflows/deploy-stack.yml@v3
+    with:
+      stack: ${{ inputs.service }}
+      environment: ${{ inputs.environment }}
+      is_deployment: ${{ inputs.is_deployment }}
+    secrets: inherit

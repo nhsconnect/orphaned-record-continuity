@@ -1,0 +1,149 @@
+#!/bin/bash
+
+set -Eeo pipefail
+
+###########################
+# Local Config Parameters #
+###########################
+
+AWS_DEFAULT_REGION=eu-west-2
+IMAGE_REPO_NAME=deductions/ehr-repo
+export NHS_SERVICE=ehr-repo
+
+function configure_domain_infix {
+  if [[ "${NHS_ENVIRONMENT}" == "prod" ]]; then
+    export DOMAIN_INFIX="prod"
+  else
+    export DOMAIN_INFIX="${NHS_ENVIRONMENT}.non-prod"
+  fi
+}
+
+function configure_service_url {
+  configure_domain_infix
+  if [[ -z "${NHS_ENVIRONMENT}" ]]; then
+    export SERVICE_URL="http://${NHS_SERVICE}:3000"
+  else
+    export SERVICE_URL="https://${NHS_SERVICE}.${DOMAIN_INFIX}.patient-deductions.nhs.uk"
+  fi
+}
+
+function prepare_local_envs_for_ide {
+  envs=$(printenv | grep "NODE_ENV" && \
+          printenv | grep "AUTHORIZATION_KEYS" && \
+          printenv | grep "SERVICE_URL"
+  )
+
+  echo "Paste these env vars to your IntelliJ run template:"
+  echo $envs | tr ' ' ';'
+}
+
+function configure_local_envs {
+  export AUTHORIZATION_KEYS=auth-keys-1
+  export S3_BUCKET_NAME=test-bucket
+  export LOCALSTACK_URL=http://localstack:4572/
+  export REPOSITORY_URI=$IMAGE_REPO_NAME
+  export NODE_ENV=local
+
+  export DYNAMODB_NAME=local-test-db
+  export DYNAMODB_LOCAL_ENDPOINT=http://localstack:4572/
+  export AWS_ACCESS_KEY_ID=LSIA5678901234567890
+  export AWS_SECRET_ACCESS_KEY=LSIA5678901234567890
+
+  configure_service_url
+}
+
+function configure_local_envs_for_docker_test {
+  export AUTHORIZATION_KEYS=auth-key-1
+  export S3_BUCKET_NAME=test-bucket
+  export LOCALSTACK_URL=http://localstack:4572
+  export REPOSITORY_URI=$IMAGE_REPO_NAME
+  export NODE_ENV=local
+
+  export DYNAMODB_NAME=local-test-db
+  export DYNAMODB_LOCAL_ENDPOINThttp://localstack:4572/
+
+  configure_service_url
+}
+
+############################
+# Docker Related Functions #
+############################
+
+function set_image_tag() {
+  export IMAGE_TAG=$(git rev-parse HEAD | cut -c 1-8)
+}
+
+function build_docker_image() {
+  echo Build started on $(date)
+  set_image_tag
+  echo Building the Docker image...
+  docker build -t $REPOSITORY_URI:latest -t $REPOSITORY_URI:$IMAGE_TAG .
+  echo Build completed on `date`
+}
+
+###########
+## TASKS ##
+###########
+
+command="$1"
+case "${command}" in
+  dep)
+      npm install
+      npm run check-audit
+      ;;
+  fix_dep)
+      npm install
+      npm run resolve-audit
+      ;;
+  list_outdated)
+      npm install
+      npm outdated > outdated-dependencies.txt
+      ;;
+  build)
+      rm -rf build/
+      npm install
+      npm run build
+      ;;
+  setup_test_integration_local)
+    configure_local_envs
+    prepare_local_envs_for_ide
+    ;;
+  test_all)
+      npm install
+      npm run lint
+      npm run test:unit
+      configure_local_envs
+      sh scripts/create-dynamodb-table.sh
+      npm run test:integration
+      ;;
+  test_coverage)
+      npm install
+      sh scripts/create-dynamodb-table.sh
+      npm run test:coverage
+      ;;
+  test_coverage-github-action)
+      npm install
+      npm run test:coverage-unit-test-only
+      ;;
+  build_docker_local)
+      configure_local_envs_for_docker_test
+      build_docker_image
+      ;;
+  sanity_check)
+      configure_domain_infix
+      check_env
+      nslookup "ehr-repo.${DOMAIN_INFIX}.patient-deductions.nhs.uk"
+      curl -i --fail "https://ehr-repo.${DOMAIN_INFIX}.patient-deductions.nhs.uk/health"
+      ;;
+  wait_ecs)
+      aws ecs wait services-stable \
+        --region $AWS_DEFAULT_REGION \
+        --cluster $NHS_ENVIRONMENT-ehr-repo-ecs-cluster \
+        --service $NHS_ENVIRONMENT-${NHS_SERVICE}-service
+      ;;
+  *)
+      echo "Invalid command: '${command}'"
+      exit 1
+      ;;
+esac
+set +e

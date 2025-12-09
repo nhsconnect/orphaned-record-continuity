@@ -1,0 +1,15 @@
+services:
+  localstack:
+    container_name: "localstack-suspension-service"
+    image: localstack/localstack
+    ports:
+      - "4566:4566"
+    network_mode: bridge
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - SERVICES=sqs,sns,dynamodb,cloudwatch
+      - GATEWAY_LISTEN=4566
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<include resource="org/springframework/boot/logging/logback/console.xml"/>
+	<springProperty scope="context" name="environment" source="environment"/>
+	<property resource="application.properties" />
+	<appender name="INFO_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+		<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+			<level>INFO</level>
+		</filter>
+		<encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+			<providers>
+				<timestamp>
+					<timeZone>UTC</timeZone>
+				</timestamp>
+				<logstashMarkers/>
+				<mdc />
+				<pattern>
+					<omitEmptyFields>true</omitEmptyFields>
+					<pattern>
+						{
+						"level": "%level",
+						"service": "pds-adaptor",
+						"class": "%C{0}",
+						"line": "%L",
+						"message": "%message",
+						"environment": "${NHS_ENVIRONMENT:-local}"
+						}
+					</pattern>
+				</pattern>
+				<stackTrace/>
+				<arguments>
+					<includeNonStructuredArguments>true</includeNonStructuredArguments>
+				</arguments>
+			</providers>
+		</encoder>
+
+	</appender>
+	<appender name="DEBUG_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+			<providers>
+				<timestamp>
+					<timeZone>UTC</timeZone>
+				</timestamp>
+				<mdc />
+				<pattern>
+					<omitEmptyFields>true</omitEmptyFields>
+					<pattern>
+						{
+						"level": "%level",
+						"service": "pds-adaptor",
+						"class": "%C{0}",
+						"line": "%L",
+						"message": "%message",
+						"environment": "${NHS_ENVIRONMENT:-local}"
+						}
+					</pattern>
+				</pattern>
+				<stackTrace>
+					<throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+						<maxDepthPerThrowable>30</maxDepthPerThrowable>
+						<maxLength>2048</maxLength>
+						<shortenedClassNameLength>20</shortenedClassNameLength>
+						<rootCauseFirst>true</rootCauseFirst>
+					</throwableConverter>
+				</stackTrace>
+				<arguments>
+					<includeNonStructuredArguments>true</includeNonStructuredArguments>
+				</arguments>
+			</providers>
+		</encoder>
+
+	</appender>
+
+	<root level="DEBUG">
+		<appender-ref ref="INFO_CONSOLE" />
+	</root>
+
+</configuration>

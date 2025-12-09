@@ -1,0 +1,10 @@
+version: '2'
+services:
+  default:
+    links:
+      - gp2gp-messenger:gp2gp-messenger
+  gp2gp-messenger:
+    image: ${REPOSITORY_URI}:${IMAGE_TAG}
+    environment:
+      - GP2GP_MESSENGER_REPOSITORY_ASID=deduction-asid
+      - GP2GP_MESSENGER_REPOSITORY_ODS_CODE=deduction-ods

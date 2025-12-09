@@ -1,0 +1,118 @@
+name: Base Python Services Build and Deploy
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        default: dev
+        required: true
+      service:
+        type: string
+        required: true
+      is_deployment:
+        type: boolean
+        default: false
+        required: true
+      deploy_infra:
+        type: boolean
+        default: true
+
+permissions:
+  pull-requests: write
+  id-token: write
+  contents: read
+
+jobs:
+  run_tests:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: "./services/${{ inputs.service }}"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.9
+      - name: Run Unit tests
+        run: |
+          ./tasks test_unit
+
+  build-and-publish-service:
+    environment: ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    needs: [run_tests]
+    defaults:
+      run:
+        working-directory: ./services/${{ inputs.service }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.9
+
+      - name: Configure AWS credentials
+        id: auth
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          mask-aws-account-id: true
+          role-to-assume: ${{ secrets.IAM_ROLE }}
+          role-skip-session-tagging: true
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Get ECR repository URI from SSM
+        id: ecr-repo
+        run: |
+          uri=$(aws ssm get-parameter \
+          --name "/repo/${{ vars.AWS_ENVIRONMENT }}/prm-deductions-ehr-repository/ecr/url/${{ inputs.service }}" \
+          --query "Parameter.Value" --output text)
+          echo "::add-mask::$uri"
+          echo "uri=$uri" >> $GITHUB_OUTPUT
+
+      - name: Build Docker Image
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          ECR_URI: ${{ steps.ecr-repo.outputs.uri }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          TAG_ARGS=(-t "$ECR_URI:$IMAGE_TAG" -t "$ECR_URI:latest")
+          if [ -n "${REF_NAME:-}" ]; then
+            REF_TAG="${REF_NAME//\//-}"
+            TAG_ARGS+=(-t "$ECR_URI:$REF_TAG")
+          fi
+          docker build "${TAG_ARGS[@]}" --build-arg IMAGE_TAG="$IMAGE_TAG" --build-arg ENV=${{steps.auth.outputs.aws-account-id}} .
+
+      - name: Push Docker Image
+        if: ${{ inputs.is_deployment }}
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          ECR_URI: ${{ steps.ecr-repo.outputs.uri }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker push "$ECR_URI:$IMAGE_TAG"
+          docker push "$ECR_URI:latest"
+          if [ -n "${GITHUB_REF_NAME:-}" ]; then
+            REF_TAG="${GITHUB_REF_NAME//\//-}"
+            docker push "$ECR_URI:$REF_TAG"
+          fi
+
+  deploy_infra:
+    if: ${{ inputs.deploy_infra && inputs.is_deployment }}
+    name: Deploy Infrastructure
+    needs: [build-and-publish-service]
+    uses: nhsconnect/orphaned-record-continuity-infrastructure/.github/workflows/deploy-stack.yml@v3
+    with:
+      stack: ${{ inputs.service }}
+      environment: ${{ inputs.environment }}
+      is_deployment: ${{ inputs.is_deployment }}
+    secrets: inherit

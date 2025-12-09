@@ -1,32 +1,42 @@
-name: e2e
-on:
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: "Which Environment settings to use."
-        required: true
-        type: string
-        default: "dev"
-      is_deployment:
-        description: "Is workflow run on deployment"
-        type: boolean
-        default: false
+name: End to End Test
 
+permissions:
+  contents: read # Required for actions/checkout
+  id-token: write # Required for requesting the JWT
+  pull-requests: write # Required to write comments
+
+on:
   workflow_call:
-    inputs:
-      environment:
-        description: "Which Environment settings to use."
-        required: true
-        type: string
-        default: "dev"
-      is_deployment:
-        description: "Is workflow run on deployment"
-        type: boolean
-        default: false
+
+  workflow_dispatch:
+
 jobs:
-  helloworld:
+  e2e:
+    environment: dev
+    name: End to End Test
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
+
     steps:
-      - name: Hello World
-        run: echo "Hello, world!"
+      - name: Checkout End to End
+        uses: actions/checkout@v5
+        with:
+          repository: "nhsconnect/prm-repo-e2e-tests"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "adopt"
+          java-version: "21"
+
+      - name: Build
+        run: |
+          chmod +x ./gradlew
+          ./gradlew build
+
+      - name: Run End to End tests
+        env:
+          NHS_ENVIRONMENT: dev
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          ./gradlew test --tests "uk.nhs.prm.e2etests.test.repositorye2etest.RepositoryE2ETest"

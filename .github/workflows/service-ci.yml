@@ -1,0 +1,163 @@
+name: Services CI
+
+on:
+  push:
+    paths:
+      - "services/ehr-repo/**"
+      - "services/mesh-forwarder/**"
+      - "services/ehr-out-service/**"
+      - "services/nems-event-processor/**"
+      - "service/ehr-transfer-service/**"
+      - "services/pds-adaptor/**"
+      - "services/re-registration-service/**"
+      - "services/gp2gp-messenger/**"
+      - "services/suspension-service/**"
+      - ".github/workflows/service-ci.yml"
+
+  pull_request:
+    paths:
+      - "services/ehr-repo/**"
+      - "services/mesh-forwarder/**"
+      - "services/ehr-out-service/**"
+      - "services/nems-event-processor/**"
+      - "service/ehr-transfer-service/**"
+      - "services/pds-adaptor/**"
+      - "services/re-registration-service/**"
+      - "services/gp2gp-messenger/**"
+      - "services/suspension-service/**"
+      - ".github/workflows/service-ci.yml"
+
+permissions:
+  pull-requests: write
+  id-token: write
+  contents: read
+
+jobs:
+  get_changed_files:
+    name: Get change files
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.get_changes.outputs.changed }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Get Changes
+        id: get_changes
+        run: |
+          git fetch origin ${{ github.event.pull_request.base.ref }}
+          changed=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD | tr '\n' ' ')
+          echo "changed=$changed" >> $GITHUB_OUTPUT
+
+  ehr-repo:
+    name: EHR Repo CI
+    needs: get_changed_files
+    secrets: inherit
+    if: contains(needs.get_changed_files.outputs.changed, 'services/ehr-repo') || contains(needs.get_changed_files.outputs.changed, '.github/')
+    uses: "./.github/workflows/base-node-service-jobs.yml"
+    with:
+      service: ehr-repo
+      environment: dev
+      is_deployment: ${{ github.ref == 'refs/heads/main' }}
+
+  ehr-out-service:
+    name: EHR Out Service CI
+    needs: get_changed_files
+    if: contains(needs.get_changed_files.outputs.changed, 'services/ehr-out-service') || contains(needs.get_changed_files.outputs.changed, '.github/')
+    secrets: inherit
+    uses: "./.github/workflows/base-node-service-jobs.yml"
+    with:
+      service: ehr-out-service
+      environment: dev
+      is_deployment: ${{ github.ref == 'refs/heads/main' }}
+
+  mesh-forwarder:
+    name: MESH Forwarder CI
+    needs: [get_changed_files]
+    if: contains(needs.get_changed_files.outputs.changed, 'services/mesh-forwarder') || contains(needs.get_changed_files.outputs.changed, '.github/')
+    uses: "./.github/workflows/base-python-service-jobs.yml"
+    with:
+      service: mesh-forwarder
+      environment: dev
+      is_deployment: ${{ github.ref == 'refs/heads/main' }}
+    secrets: inherit
+
+  gp2gp-messenger:
+    name: GP2GP Messenger CI
+    needs: [get_changed_files]
+    if: contains(needs.get_changed_files.outputs.changed, 'services/gp2gp-messenger') || contains(needs.get_changed_files.outputs.changed, '.github/')
+    uses: "./.github/workflows/base-node-service-jobs.yml"
+    with:
+      service: gp2gp-messenger
+      environment: dev
+      is_deployment: ${{ github.ref == 'refs/heads/main' }}
+    secrets: inherit
+
+  nems-event-processor:
+    name: NEMs Event Processor CI
+    needs: [get_changed_files]
+    if: contains(needs.get_changed_files.outputs.changed, 'services/nems-event-processor') || contains(needs.get_changed_files.outputs.changed, './github/')
+    uses: "./.github/workflows/base-java-service-jobs.yml"
+    with:
+      service: nems-event-processor
+      environment: dev
+      is_deployment: ${{ github.ref == 'refs/heads/main' }}
+      requires_localstack: true
+    secrets: inherit
+
+  ehr-transfer-service:
+    name: EHR Transfer Service CI
+    needs: [get_changed_files]
+    if: contains(needs.get_changed_files.outputs.changed, 'services/ehr-transfer-service') || contains(needs.get_changed_files.outputs.changed, '.github/')
+    uses: "./.github/workflows/base-java-service-jobs.yml"
+    with:
+      service: ehr-transfer-service
+      environment: dev
+      is_deployment: ${{ github.ref == 'refs/heads/main' }}
+      requires_localstack: true
+    secrets: inherit
+
+  pds-adaptor:
+    name: PDS Adaptor CI
+    needs: [get_changed_files]
+    if: contains(needs.get_changed_files.outputs.changed, 'services/pds-adaptor') || contains(needs.get_changed_files.outputs.changed, '.github/')
+    uses: "./.github/workflows/base-java-service-jobs.yml"
+    with:
+      service: pds-adaptor
+      environment: dev
+      is_deployment: ${{ github.ref == 'refs/heads/main' }}
+      java_version: "11"
+    secrets: inherit
+
+  re-registration-service:
+    name: Re-registration Service CI
+    needs: [get_changed_files]
+    if: contains(needs.get_changed_files.outputs.changed, 'services/re-registration-service') || contains(needs.get_changed_files.outputs.changed, '.github/')
+    uses: "./.github/workflows/base-java-service-jobs.yml"
+    with:
+      service: ehr-transfer-service
+      environment: dev
+      is_deployment: ${{ github.ref == 'refs/heads/main' }}
+      requires_localstack: true
+    secrets: inherit
+
+  suspension-service:
+    name: Suspension Service CI
+    needs: [get_changed_files]
+    if: contains(needs.get_changed_files.outputs.changed, 'services/suspension-service') || contains(needs.get_changed_files.outputs.changed, '.github/')
+    uses: "./.github/workflows/base-java-service-jobs.yml"
+    with:
+      service: suspension-service
+      environment: dev
+      is_deployment: ${{ github.ref == 'refs/heads/main' }}
+      requires_localstack: true
+    secrets: inherit
+
+  e2e-testing:
+    name: End to End
+    if: ${{ vars.E2E_TESTS_ENABLED == 'true' && success() }}
+    needs: [ehr-repo, ehr-out-service, mesh-forwarder]
+    uses: ./.github/workflows/e2e.yml
+    secrets: inherit

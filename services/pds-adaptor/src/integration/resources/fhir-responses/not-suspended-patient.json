@@ -1,0 +1,100 @@
+{
+  "address": [
+    {
+      "extension": [
+        {
+          "extension": [
+            {
+              "url": "type",
+              "valueCoding": {
+                "code": "PAF",
+                "system": "https://fhir.hl7.org.uk/CodeSystem/UKCore-AddressKeyType"
+              }
+            },
+            {
+              "url": "value",
+              "valueString": "6292549"
+            }
+          ],
+          "url": "https://fhir.hl7.org.uk/StructureDefinition/Extension-UKCore-AddressKey"
+        }
+      ],
+      "id": "RfSFs",
+      "line": [
+        "1 Whitehall ",
+        "Leeds ",
+        "West Yorkshire "
+      ],
+      "period": {
+        "start": "1993-10-12"
+      },
+      "postalCode": "LS1 4HR",
+      "use": "home"
+    }
+  ],
+  "birthDate": "1982-06-08",
+  "gender": "male",
+  "generalPractitioner": [
+    {
+      "id": "OwJvS",
+      "identifier": {
+        "period": {
+          "start": "1998-01-22"
+        },
+        "system": "https://fhir.nhs.uk/Id/ods-organization-code",
+        "value": "A20047"
+      },
+      "type": "Organization"
+    }
+  ],
+  "id": "9691927179",
+  "identifier": [
+    {
+      "extension": [
+        {
+          "url": "https://fhir.hl7.org.uk/StructureDefinition/Extension-UKCore-NHSNumberVerificationStatus",
+          "valueCodeableConcept": {
+            "coding": [
+              {
+                "code": "01",
+                "display": "Number present and verified",
+                "system": "https://fhir.hl7.org.uk/CodeSystem/UKCore-NHSNumberVerificationStatus",
+                "version": "1.0.0"
+              }
+            ]
+          }
+        }
+      ],
+      "system": "https://fhir.nhs.uk/Id/nhs-number",
+      "value": "9691927179"
+    }
+  ],
+  "meta": {
+    "security": [
+      {
+        "code": "U",
+        "display": "unrestricted",
+        "system": "https://www.hl7.org/fhir/valueset-security-labels.html"
+      }
+    ],
+    "versionId": "1"
+  },
+  "name": [
+    {
+      "family": "XDJ-JUN-ALLOC-ALGO-MULTI",
+      "given": [
+        "ALEKSANDER",
+        "Wilbur"
+      ],
+      "id": "SYEPl",
+      "period": {
+        "start": "2015-08-25"
+      },
+      "prefix": [
+        "MR"
+      ],
+      "use": "usual"
+    }
+  ],
+  "resourceType": "Patient"
+}
