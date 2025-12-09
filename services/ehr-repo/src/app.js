@@ -5,8 +5,6 @@ import swaggerUi from 'swagger-ui-express';
 import { messages } from './api/messages';
 import { patients } from './api/patients';
 import { fragments } from './api/fragments';
-
-import { healthCheck } from './api/health-check/health-check';
 import { options } from './config/logging';
 import * as logging from './middleware/logging';
 import swaggerDocument from './swagger.json';
@@ -30,7 +28,6 @@ app.use(requestLogger(options));
 app.use('/patients', logging.middleware, patients);
 app.use('/messages', logging.middleware, messages);
 app.use('/fragments', logging.middleware, fragments);
-app.use('/health', logging.middleware, healthCheck);
 app.use('/swagger', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use(errorLogger(options));
 

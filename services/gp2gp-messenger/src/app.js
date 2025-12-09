@@ -2,7 +2,6 @@ import express from 'express';
 import { errorLogger, logger as requestLogger } from 'express-winston';
 import swaggerUi from 'swagger-ui-express';
 import error from './api/error';
-import healthCheck from './api/health';
 import { healthRecordRequestRouter } from './api/health-record-requests';
 import { patientDemographicsRouter } from './api/patient-demographics';
 import { ehrOutRouter } from './api/ehr-out';
@@ -22,7 +21,6 @@ app.use(
     maxAge: 31536000
   })
 );
-app.use('/health', logging.middleware, healthCheck);
 app.use('/error', logging.middleware, error);
 app.use('/swagger', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use('/patient-demographics', logging.middleware, patientDemographicsRouter);

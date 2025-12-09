@@ -6,31 +6,6 @@
     "title": "ehr-out-service"
   },
   "paths": {
-    "/health": {
-      "get": {
-        "tags": [
-          "/health"
-        ],
-        "summary": "Checks health of api",
-        "produces": [
-          "application/json"
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful retrieval",
-            "schema": {
-              "$ref": "#/definitions/healthCheckResponse"
-            }
-          },
-          "500": {
-            "description": "Error",
-            "schema": {
-              "$ref": "#/definitions/errorResponse"
-            }
-          }
-        }
-      }
-    },
     "/registration-requests/{conversationId}": {
       "get": {
         "tags": [
@@ -95,27 +70,6 @@
           "items": {
             "type": "string"
           }
-        }
-      }
-    },
-    "healthCheckResponse": {
-      "type": "object",
-      "properties": {
-        "version": {
-          "type": "string",
-          "description": "Version number"
-        },
-        "description": {
-          "type": "string",
-          "description": "Describes the component"
-        },
-        "status": {
-          "type": "string",
-          "description": "Tells you if the service is running"
-        },
-        "nhsEnvironment": {
-          "type": "string",
-          "description": "Environment - test, dev etc."
         }
       }
     }

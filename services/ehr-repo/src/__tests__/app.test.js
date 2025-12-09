@@ -3,7 +3,6 @@ import app from '../app';
 
 jest.mock('../middleware/logging');
 jest.mock('../middleware/auth');
-jest.mock('../services/health-check/get-health-check');
 
 describe('app', () => {
   describe('GET /', () => {

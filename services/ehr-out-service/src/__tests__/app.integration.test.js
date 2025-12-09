@@ -44,31 +44,6 @@ jest.mock('../services/gp2gp/send-core');
 jest.mock('../services/ehr-repo/get-fragment');
 jest.mock('../services/gp2gp/send-fragment');
 
-describe('GET /health', () => {
-  // ============ COMMON PROPERTIES ============
-  const HEALTH_ENDPOINT = '/health';
-  const { nhsEnvironment } = config();
-  // =================== END ===================
-
-  it('should return 200 and the response from getHealthCheck', async () => {
-    const expectedHealthCheckResponse = {
-      version: '1',
-      description: 'Health of ehr-out-service',
-      nhsEnvironment: nhsEnvironment,
-      details: {
-        database: {
-          type: 'dynamodb'
-        }
-      }
-    };
-
-    const response = await request(app).get(HEALTH_ENDPOINT);
-
-    expect(response.statusCode).toBe(200);
-    expect(response.body).toMatchObject(expectedHealthCheckResponse);
-  });
-});
-
 describe('Swagger Documentation', () => {
   // ============ COMMON PROPERTIES ============
   const SWAGGER_ENDPOINT_1 = '/swagger';

@@ -2,7 +2,6 @@ import { when } from 'jest-when';
 import request from 'supertest';
 import { v4 as uuid } from 'uuid';
 import app from '../app';
-import { getHealthCheck } from '../services/health-check/get-health-check';
 import { sendMessage } from '../services/mhs/mhs-outbound-client';
 import generatePdsRetrievalQuery from '../templates/generate-pds-retrieval-request';
 import generateUpdateOdsRequest from '../templates/generate-update-ods-request';
@@ -17,7 +16,6 @@ jest.mock('../config/', () => ({
     spineOrgCode: 'code'
   })
 }));
-jest.mock('../services/health-check/get-health-check');
 jest.mock('../middleware/auth');
 jest.mock('../services/mhs/mhs-outbound-client');
 jest.mock('../services/fhir/sds-fhir-client');
@@ -55,28 +53,6 @@ describe('app', () => {
         </performer>
       </patientCareProvisionEvent>
   </PDSResponse>`;
-
-  describe('GET /health', () => {
-    beforeEach(() => {
-      getHealthCheck.mockReturnValue(
-        Promise.resolve({
-          details: {
-            filestore: {
-              available: true,
-              writable: true
-            },
-            mhs: {
-              connected: true
-            }
-          }
-        })
-      );
-    });
-
-    it('should return a 200 status code', done => {
-      request(app).get('/health').expect(200).end(done);
-    });
-  });
 
   describe('GET /patient-demographics/:nhsNumber', () => {
     beforeEach(() => {
