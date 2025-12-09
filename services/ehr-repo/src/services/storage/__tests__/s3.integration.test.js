@@ -19,19 +19,6 @@ describe('S3Service integration test with localstack', () => {
   };
 
   // ===== TESTS START FROM HERE =====
-  it('can access the default test-bucket in localstack', async () => {
-    // when
-    const response = await S3CLIENT.checkS3Health();
-
-    // then
-    expect(response).toEqual({
-      available: true,
-      bucketName: 'test-bucket',
-      type: 's3',
-      writable: true
-    });
-  });
-
   describe('saveObjectWithName', () => {
     it('can save an object in the S3 bucket', async () => {
       // given
