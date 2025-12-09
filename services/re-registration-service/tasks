@@ -139,14 +139,12 @@ case "${command}" in
       ;;
   test_all)
       configure_envs
-      docker-compose -f docker-compose.localstack-local.yaml up -d
       ./gradlew test integration jacocoTestCoverageVerification check
       ;;
   run_sonar)
       configure_envs
       _assume_environment_role $NHS_ENVIRONMENT
       configure_sonar_environment_variable
-      
       destroy_localstack
       ./gradlew build sonar --info
       ;;
