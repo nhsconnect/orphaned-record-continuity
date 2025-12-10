@@ -7,15 +7,22 @@ ARG IMAGE_TAG=image_tag \
 ENV BUILD_TAG=${IMAGE_TAG}
 
 RUN addgroup --system mesh && adduser --ingroup mesh --system mesh
-COPY . /mesh-forwarder
+
+# This sets the working directory for ALL subsequent RUNs and for ENTRYPOINT
+WORKDIR ${FORWARDER_HOME}
+
+# Copy project into WORKDIR (so src is at /mesh-forwarder/src)
+COPY . .
 
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
+
 RUN pip install pipenv
-RUN cd /mesh-forwarder && pipenv install
 
-RUN chown -R mesh:mesh /mesh-forwarder
+# Install dependencies into the current env instead of creating another venv
+RUN pipenv install --deploy --system
 
+RUN chown -R mesh:mesh ${FORWARDER_HOME}
 USER mesh
 
 ENTRYPOINT ["python", "-m", "src.awsmesh.entrypoint"]
