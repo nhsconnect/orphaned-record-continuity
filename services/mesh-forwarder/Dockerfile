@@ -25,5 +25,4 @@ RUN pipenv install --deploy --system
 RUN chown -R mesh:mesh ${FORWARDER_HOME}
 USER mesh
 
-# Now that CWD=/mesh-forwarder and src/ exists there, this works:
 ENTRYPOINT ["python", "-m", "src.awsmesh.entrypoint"]
