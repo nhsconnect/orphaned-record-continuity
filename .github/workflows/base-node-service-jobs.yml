@@ -134,12 +134,12 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         run: |
           set -euo pipefail
-          TAG_ARG=""
+          TAG_ARGS=(-t "$REGISTRY/$REPOSITORY:$IMAGE_TAG")
           if [ -n "${REF_NAME:-}" ]; then
             REF_TAG="${REF_NAME//\//-}"
-            TAG_ARG="-t $REGISTRY/$REPOSITORY:$REF_TAG"
+            TAG_ARGS+=(-t "$REGISTRY/$REPOSITORY:$REF_TAG")
           fi
-          docker build $TAG_ARG --build-arg BUILD_TAG="$IMAGE_TAG" 
+          docker build "${TAG_ARGS[@]}" --build-arg BUILD_TAG="$IMAGE_TAG" .
 
       - name: Docker Publish
         if: ${{ inputs.is_deployment }}
