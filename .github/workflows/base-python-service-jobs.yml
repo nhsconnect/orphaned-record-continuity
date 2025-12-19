@@ -81,29 +81,18 @@ jobs:
 
       - name: Build Docker Image
         env:
-          REF_NAME: ${{ github.ref_name }}
           ECR_URI: ${{ steps.ecr-repo.outputs.uri }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          TAG_ARGS=(-t "$ECR_URI:$IMAGE_TAG")
-          if [ -n "${REF_NAME:-}" ]; then
-            REF_TAG="${REF_NAME//\//-}"
-            TAG_ARGS+=(-t "$ECR_URI:$REF_TAG")
-          fi
-          docker build "${TAG_ARGS[@]}" --build-arg IMAGE_TAG="$IMAGE_TAG" --build-arg ENV=${{steps.auth.outputs.aws-account-id}} .
+          docker build -t "$ECR_URI:$IMAGE_TAG" --build-arg IMAGE_TAG="$IMAGE_TAG" --build-arg ENV=${{steps.auth.outputs.aws-account-id}} .
 
       - name: Push Docker Image
         if: ${{ inputs.is_deployment }}
         env:
-          REF_NAME: ${{ github.ref_name }}
           ECR_URI: ${{ steps.ecr-repo.outputs.uri }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
           docker push "$ECR_URI:$IMAGE_TAG"
-          if [ -n "${REF_NAME:-}" ]; then
-            REF_TAG="${REF_NAME//\//-}"
-            docker push "$ECR_URI:$REF_TAG"
-          fi
 
   deploy_infra:
     if: ${{ inputs.deploy_infra && inputs.is_deployment }}
