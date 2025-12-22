@@ -17,6 +17,10 @@ on:
       deploy_infra:
         type: boolean
         default: true
+      ecr_alias:
+        description: "ECR Repository Alias"
+        type: string
+        required: false
 
 permissions:
   pull-requests: write
@@ -103,4 +107,5 @@ jobs:
       stack: ${{ inputs.service }}
       environment: ${{ inputs.environment }}
       is_deployment: ${{ inputs.is_deployment }}
+      ecr_alias: ${{ inputs.ecr_alias }}
     secrets: inherit
