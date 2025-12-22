@@ -61,6 +61,7 @@ jobs:
       service: ehr-repo
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
+      ecr_alias: deductions/ehr-repo
 
   ehr-out-service:
     name: EHR Out Service CI
@@ -72,6 +73,7 @@ jobs:
       service: ehr-out-service
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
+      ecr_alias: deductions/ehr-out-service
 
   mesh-forwarder:
     name: MESH Forwarder CI
@@ -82,6 +84,7 @@ jobs:
       service: mesh-forwarder
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
+      ecr_alias: deductions/mesh-forwarder
     secrets: inherit
 
   gp2gp-messenger:
@@ -93,6 +96,7 @@ jobs:
       service: gp2gp-messenger
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
+      ecr_alias: deductions/gp2gp-messenger
     secrets: inherit
 
   nems-event-processor:
@@ -105,6 +109,7 @@ jobs:
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
       requires_localstack: true
+      ecr_alias: deductions/nems-event-processor
     secrets: inherit
 
   ehr-transfer-service:
@@ -117,6 +122,7 @@ jobs:
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
       requires_localstack: true
+      ecr_alias: deductions/ehr-transfer-service
     secrets: inherit
 
   pds-adaptor:
@@ -129,6 +135,7 @@ jobs:
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
       java_version: "11"
+      ecr_alias: deductions/pds-adaptor
     secrets: inherit
 
   re-registration-service:
@@ -142,6 +149,7 @@ jobs:
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
       requires_localstack: true
       image_prefix: repo/
+      ecr_alias: repo/re-registration-service
     secrets: inherit
 
   suspension-service:
@@ -155,6 +163,7 @@ jobs:
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
       requires_localstack: true
       image_prefix: repo/
+      ecr_alias: repo/suspension-service
     secrets: inherit
 
   e2e-testing:

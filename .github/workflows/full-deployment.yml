@@ -31,7 +31,8 @@ jobs:
       service: ehr-repo
       environment: ${{ inputs.environment }}
       is_deployment: ${{ inputs.is_deployment }}
-     
+      ecr_alias: deductions/ehr-repo
+
   ehr-out-service:
     name: EHR Out Service CI
     secrets: inherit
@@ -40,6 +41,7 @@ jobs:
       service: ehr-out-service
       environment: ${{ inputs.environment }}
       is_deployment: ${{ inputs.is_deployment }}
+      ecr_alias: deductions/ehr-out-service
 
   mesh-forwarder:
     name: MESH Forwarder CI
@@ -48,6 +50,7 @@ jobs:
       service: mesh-forwarder
       environment: ${{ inputs.environment }}
       is_deployment: ${{ inputs.is_deployment }}
+      ecr_alias: deductions/mesh-forwarder
     secrets: inherit
 
   gp2gp-messenger:
@@ -57,6 +60,7 @@ jobs:
       service: gp2gp-messenger
       environment: ${{ inputs.environment }}
       is_deployment: ${{ inputs.is_deployment }}
+      ecr_alias: deductions/gp2gp-messenger
     secrets: inherit
 
   nems-event-processor:
@@ -67,6 +71,7 @@ jobs:
       environment: ${{ inputs.environment }}
       is_deployment: ${{ inputs.is_deployment }}
       requires_localstack: true
+      ecr_alias: deductions/nems-event-processor
     secrets: inherit
 
   ehr-transfer-service:
@@ -77,6 +82,7 @@ jobs:
       environment: ${{ inputs.environment }}
       is_deployment: ${{ inputs.is_deployment }}
       requires_localstack: true
+      ecr_alias: deductions/ehr-transfer-service
     secrets: inherit
 
   pds-adaptor:
@@ -87,6 +93,7 @@ jobs:
       environment: ${{ inputs.environment }}
       is_deployment: ${{ inputs.is_deployment }}
       java_version: "11"
+      ecr_alias: deductions/pds-adaptor
     secrets: inherit
 
   re-registration-service:
@@ -98,6 +105,7 @@ jobs:
       is_deployment: ${{ inputs.is_deployment }}
       requires_localstack: true
       image_prefix: repo/
+      ecr_alias: repo/re-registration-service
     secrets: inherit
 
   suspension-service:
@@ -109,6 +117,7 @@ jobs:
       is_deployment: ${{ inputs.is_deployment }}
       requires_localstack: true
       image_prefix: repo/
+      ecr_alias: repo/suspension-service
     secrets: inherit
 
   e2e-testing:
