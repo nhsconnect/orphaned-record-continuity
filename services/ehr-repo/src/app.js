@@ -9,6 +9,7 @@ import { options } from './config/logging';
 import * as logging from './middleware/logging';
 import swaggerDocument from './swagger.json';
 import helmet from 'helmet';
+import { healthCheck } from './api/health-check/health-check';
 
 httpContext.enable();
 
@@ -24,7 +25,7 @@ app.use(
   })
 );
 app.use(requestLogger(options));
-
+app.use('/health', logging.middleware, healthCheck);
 app.use('/patients', logging.middleware, patients);
 app.use('/messages', logging.middleware, messages);
 app.use('/fragments', logging.middleware, fragments);
