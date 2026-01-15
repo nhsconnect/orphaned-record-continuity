@@ -1,10 +1,10 @@
-FROM python:3.9.6-alpine
+FROM python:3.9-alpine3.22
 
 ENV POLL_FREQUENCY=60
 ENV FORWARDER_HOME=/mesh-forwarder
 ARG IMAGE_TAG=image_tag \
     ENV=bucket
-ENV BUILD_TAG=${IMAGE_TAG}
+ENV BUILD_TAG=${IMAGE_TAG}c
 
 RUN addgroup --system mesh && adduser --ingroup mesh --system mesh
 
