@@ -2,7 +2,7 @@ FROM node:24-alpine3.23 AS builder
 
 RUN apk update && \
     apk -u list && \
-    apk upgrade &&  \
+    apk upgrade && \
     rm -rf /var/cache/apk/* \
 
 COPY package*.json /app/

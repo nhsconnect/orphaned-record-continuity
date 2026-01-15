@@ -1,5 +1,10 @@
 FROM python:3.9-alpine3.22
 
+RUN apk update && \
+    apk -u list && \
+    apk upgrade && \
+    rm -rf /var/cache/apk/*
+
 ENV POLL_FREQUENCY=60
 ENV FORWARDER_HOME=/mesh-forwarder
 ARG IMAGE_TAG=image_tag \
