@@ -21,16 +21,9 @@ COPY --from=builder /usr/local/bin/node /usr/local/bin
 COPY --from=builder /app /app
 
 RUN apk update && \
-    apk add --no-cache bash tini && \
+    apk add --no-cache bash tini aws-cli && \
     rm -rf /var/cache/apk/*
 
-RUN apk add --no-cache \
-        python3 \
-        py3-pip \
-    && pip3 install --upgrade pip \
-    && pip3 install \
-        awscli \
-    && rm -rf /var/cache/apk/*
 
 COPY build/                   /app/build
 

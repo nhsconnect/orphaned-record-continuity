@@ -22,19 +22,14 @@ COPY --from=builder /app /app
 
 # install python native requirements (again, as per builder)
 # add root CA from deductions team to trusted certificates
+
+# TODO PRM-223 OR PRM-225 (can't remember and jira is broken) - Rip out Tini, hasn't been updated since 2020
+
 RUN apk update && \
     apk -u list && \
     apk upgrade &&  \
-    apk add --no-cache openssl ca-certificates bash tini && \
+    apk add --no-cache openssl ca-certificates bash tini aws-cli && \
     rm -rf /var/cache/apk/*
-
-RUN apk add --no-cache \
-        python3 \
-        py3-pip \
-    && pip3 install --upgrade pip \
-    && pip3 install \
-        awscli \
-    && rm -rf /var/cache/apk/*
 
 COPY build/                   /app/build
 
