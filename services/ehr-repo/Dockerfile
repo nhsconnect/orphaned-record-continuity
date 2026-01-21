@@ -23,7 +23,7 @@ COPY --from=builder /app /app
 # install python native requirements (again, as per builder)
 # add root CA from deductions team to trusted certificates
 
-# TODO PRM-223 OR PRM-225 (can't remember and jira is broken) - Rip out Tini, hasn't been updated since 2020
+# TODO PRM-225 - Rip out Tini, hasn't been updated since 2020
 
 RUN apk update && \
     apk -u list && \
