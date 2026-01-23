@@ -12,7 +12,7 @@
     "start:local": "babel-node src/server.js",
     "start:nodemon": "nodemon --exec npm run start:local",
     "test": "npm run lint:fix && npm run test:unit",
-    "test:unit": "jest \"src/(?!(.*\\integration.test\\.js))\" --setupFiles",
+    "test:unit": "jest \"src/(?!(.*\\integration.test\\.js))\" --setupFiles dotenv/config",
     "test:integration": "jest \"src/.*\\integration.test\\.js\" --detectOpenHandles --forceExit --setupFiles dotenv/config",
     "test:health": "jest test/functional/health.test.js",
     "test:docker": "npm run test:health",
