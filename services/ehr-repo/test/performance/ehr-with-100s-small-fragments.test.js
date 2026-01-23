@@ -16,7 +16,7 @@ async function sendFragment(id, conversationId, fragmentMessageIds) {
     }
   };
 
-  const response = await axios.post(`${process.env.SERVICE_URL}/messages`, fragment, {
+  const response = await axios.post(`http://localhost:3000/messages`, fragment, {
     adapter: 'http',
     headers
   });
@@ -38,7 +38,7 @@ async function sendEhrExtract(ehrExtractMessageId, conversationId, nhsNumber, fr
     }
   };
 
-  const ehrResponse = await axios.post(`${process.env.SERVICE_URL}/messages`, ehrExtract, {
+  const ehrResponse = await axios.post(`http://localhost:3000/messages`, ehrExtract, {
     adapter: 'http',
     headers
   });
@@ -88,7 +88,7 @@ const testPerformance = async (
 
   // Retrieve ehr
   const retrieval = await axios.get(
-    `${process.env.SERVICE_URL}/patients/${nhsNumber}/health-records/${conversationId}`,
+    `http://localhost:3000/patients/${nhsNumber}/health-records/${conversationId}`,
     {
       headers,
       adapter: 'http'

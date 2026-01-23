@@ -1,9 +1,10 @@
-import axios from 'axios';
+import requests from 'http';
 
 describe('GET /health', () => {
   it('should return true for all dependencies', async () => {
-    const res = await axios.get(`${process.env.SERVICE_URL}/health`, { adapter: 'http' });
-
+    const res = await requests.get(`http://localhost:3000/health`, (res) => {
+      return res;
+    });
     expect(res.data).toEqual(
       expect.objectContaining({
         version: '1',
