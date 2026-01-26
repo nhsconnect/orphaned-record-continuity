@@ -11,8 +11,6 @@
     "test": "npm run lint:fix && npm run test:unit",
     "test:unit": "jest \"src/(?!(.*\\integration.test\\.js))\" --setupFiles dotenv/config",
     "test:integration": "jest \"src/.*\\integration.test\\.js\" --detectOpenHandles --forceExit --setupFiles dotenv/config",
-    "test:performance": "jest test/performance/*",
-    "test:docker": "jest test/docker/*",
     "test:watch": "jest \"src/(?!(.*\\integration.test\\.js))\" --setupFiles dotenv/config --watch",
     "test:coverage": "jest src/ --maxWorkers=1 --coverage --detectOpenHandles --forceExit --setupFiles dotenv/config",
     "test:coverage-unit-test-only": "jest  \"src/(?!(.*\\integration.test\\.js))\" --maxWorkers=1 --coverage --detectOpenHandles --forceExit --setupFiles dotenv/config",
