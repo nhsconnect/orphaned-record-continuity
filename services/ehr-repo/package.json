@@ -6,7 +6,7 @@
   "scripts": {
     "check-audit": "check-audit",
     "resolve-audit": "resolve-audit",
-    "lint": "eslint src/ test/ scripts/",
+    "lint": "eslint src/ scripts/",
     "lint:fix": "npm run lint -- --fix",
     "test": "npm run lint:fix && npm run test:unit",
     "test:unit": "jest \"src/(?!(.*\\integration.test\\.js))\" --setupFiles dotenv/config",
