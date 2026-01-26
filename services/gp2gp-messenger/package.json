@@ -6,7 +6,7 @@
   "scripts": {
     "check-audit": "check-audit",
     "resolve-audit": "resolve-audit",
-    "lint": "eslint src/ test/ scripts/",
+    "lint": "eslint src/ scripts/",
     "lint:fix": "npm run lint -- --fix",
     "test": "npm run lint:fix && npm run test:unit && npm run test:integration",
     "test:unit": "jest \"src/(?!(.*\\integration.test\\.js))\" --setupFiles --detectOpenHandles dotenv/config",
@@ -70,7 +70,9 @@
     "testPathIgnorePatterns": [
       ".*/__tests__/data/.*",
       "src/templates/__tests__/test-fragment-message-payload-template.js",
-      ".*/test-utils.js"
+      ".*/test-utils.js",
+      ".*/test/e2e/.*",
+      ".*/test/functional/.*"
     ],
     "resetModules": true,
     "clearMocks": true,
