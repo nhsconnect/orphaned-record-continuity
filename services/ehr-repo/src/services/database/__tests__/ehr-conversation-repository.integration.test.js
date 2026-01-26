@@ -257,9 +257,8 @@ describe('ehr-conversation-repository', () => {
       await createCore({ conversationId, messageId, fragmentMessageIds: [] });
 
       // when
-      const { coreMessageId, fragmentMessageIds } = await getMessageIdsForConversation(
-        conversationId
-      );
+      const { coreMessageId, fragmentMessageIds } =
+        await getMessageIdsForConversation(conversationId);
 
       // then
       expect(coreMessageId).toEqual(messageId);
@@ -276,9 +275,8 @@ describe('ehr-conversation-repository', () => {
       await markFragmentAsReceived(fragmentMessageId, conversationId);
 
       // when
-      const { coreMessageId, fragmentMessageIds } = await getMessageIdsForConversation(
-        conversationId
-      );
+      const { coreMessageId, fragmentMessageIds } =
+        await getMessageIdsForConversation(conversationId);
 
       // then
       expect(coreMessageId).toEqual(messageId);
@@ -299,9 +297,8 @@ describe('ehr-conversation-repository', () => {
       await markFragmentAsReceived(nestedFragmentId, conversationId);
 
       // when
-      const { coreMessageId, fragmentMessageIds } = await getMessageIdsForConversation(
-        conversationId
-      );
+      const { coreMessageId, fragmentMessageIds } =
+        await getMessageIdsForConversation(conversationId);
 
       // then
       expect(coreMessageId).toEqual(messageId);
