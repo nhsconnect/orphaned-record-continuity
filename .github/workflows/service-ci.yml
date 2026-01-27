@@ -47,8 +47,13 @@ jobs:
       - name: Get Changes
         id: get_changes
         run: |
-          git fetch origin ${{ github.event.pull_request.base.ref }}
-          changed=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD | tr '\n' ' ')
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            git fetch origin ${{ github.event.pull_request.base.ref }}
+            BASE="origin/${{ github.event.pull_request.base.ref }}"
+          else
+            BASE="HEAD~1"
+          fi
+          changed=$(git diff --name-only $BASE...HEAD | tr '\n' ' ')
           echo "changed=$changed" >> $GITHUB_OUTPUT
 
   ehr-repo:
